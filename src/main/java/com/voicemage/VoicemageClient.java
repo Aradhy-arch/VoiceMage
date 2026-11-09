@@ -1,0 +1,210 @@
+package com.voicemage;
+
+import com.mojang.blaze3d.platform.InputConstants.Type;
+import com.voicemage.client.ExplosionImpactFrame;
+import com.voicemage.client.FallingSpellVisuals;
+import com.voicemage.client.ManaHud;
+import com.voicemage.client.SharedSpeechModel;
+import com.voicemage.client.MicrophoneCommands;
+import com.voicemage.client.VoiceRecognitionService;
+import com.voicemage.client.VoicemageSettingsScreen;
+import com.voicemage.client.VoicemageSpellsScreen;
+import com.voicemage.config.VoicemageConfig;
+import com.voicemage.network.CastCustomSpellPayload;
+import com.voicemage.network.CastSpellPayload;
+import com.voicemage.network.ChantSettingsPayload;
+import com.voicemage.network.CustomSpellsSyncPayload;
+import com.voicemage.network.FallingSpellPayload;
+import com.voicemage.network.ManaSyncPayload;
+import com.voicemage.network.OpenSettingsPayload;
+import com.voicemage.network.OpenSpellsPayload;
+import com.voicemage.network.SpellVisualPayload;
+import com.voicemage.spell.Spell;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents.ClientStopping;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.EndTick;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.Disconnect;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.Join;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.KeyMapping.Category;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+
+public final class VoicemageClient implements ClientModInitializer {
+   private static VoiceRecognitionService voice;
+   private static KeyMapping toggleVoice;
+   private static boolean voiceEnabled = true;
+   private static int manaTenths = 1000;
+   private static int maxManaTenths = 1000;
+   private static int feedbackTicks;
+   private static String feedback = "";
+
+   public void onInitializeClient() {
+      voice = new VoiceRecognitionService(VoicemageClient::heardSpell);
+      MicrophoneCommands.register(() -> {
+         Minecraft minecraft = Minecraft.getInstance();
+         if (voiceEnabled && minecraft.player != null) {
+            voice.stop();
+            voice.start();
+         }
+      });
+      ClientPlayNetworking.registerGlobalReceiver(
+         ChantSettingsPayload.TYPE, (payload, context) -> context.client().execute(() -> voice.setExplosionChantRequired(payload.required()))
+      );
+      ClientPlayNetworking.registerGlobalReceiver(
+         CustomSpellsSyncPayload.TYPE, (payload, context) -> context.client().execute(() -> {
+            VoicemageConfig.applyCustomSpellsJson(payload.json());
+            if (voice != null) {
+               voice.updateGrammar();
+            }
+         })
+      );
+      ClientPlayNetworking.registerGlobalReceiver(
+         OpenSettingsPayload.TYPE, (payload, context) -> context.client().execute(() -> {
+            VoicemageConfig.applyFullConfigJson(payload.configJson());
+            context.client().setScreen(new VoicemageSettingsScreen());
+         })
+      );
+      ClientPlayNetworking.registerGlobalReceiver(
+         OpenSpellsPayload.TYPE, (payload, context) -> context.client().execute(() -> {
+            VoicemageConfig.applyFullConfigJson(payload.configJson());
+            context.client().setScreen(new VoicemageSpellsScreen());
+         })
+      );
+      Category category = Category.register(Identifier.fromNamespaceAndPath("voicemage", "controls"));
+      toggleVoice = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.voicemage.toggle_voice", Type.KEYSYM, 86, category));
+      ClientPlayNetworking.registerGlobalReceiver(ManaSyncPayload.TYPE, (payload, context) -> context.client().execute(() -> acceptMana(payload)));
+      ClientPlayNetworking.registerGlobalReceiver(SpellVisualPayload.TYPE, (payload, context) -> context.client().execute(() -> {
+         FallingSpellVisuals.impact(payload);
+         ExplosionImpactFrame.accept(context.client(), payload);
+      }));
+      ClientPlayNetworking.registerGlobalReceiver(
+         FallingSpellPayload.TYPE, (payload, context) -> context.client().execute(() -> FallingSpellVisuals.accept(context.client(), payload))
+      );
+      ClientPlayConnectionEvents.JOIN.register((Join)(handler, sender, client) -> {
+         if (voiceEnabled) {
+            voice.start();
+         }
+      });
+      ClientPlayConnectionEvents.DISCONNECT.register((Disconnect)(handler, client) -> {
+         voice.stop();
+         SharedSpeechModel.freeWhenIdle();
+         voice.setExplosionChantRequired(true);
+         ExplosionImpactFrame.clear();
+         FallingSpellVisuals.clear();
+      });
+      ClientLifecycleEvents.CLIENT_STOPPING.register((ClientStopping)client -> {
+         voice.stop();
+         SharedSpeechModel.freeWhenIdle();
+      });
+      ClientTickEvents.END_CLIENT_TICK.register((EndTick)client -> {
+         ExplosionImpactFrame.tick(client);
+         FallingSpellVisuals.tick(client);
+         if (feedbackTicks > 0) {
+            feedbackTicks--;
+         }
+
+         for (; toggleVoice.consumeClick(); feedbackTicks = 60) {
+            voiceEnabled = !voiceEnabled;
+            if (voiceEnabled && client.player != null) {
+               voice.start();
+               feedback = "Voice recognition starting";
+            } else {
+               voice.stop();
+               feedback = "Voice recognition muted";
+            }
+         }
+      });
+      HudElementRegistry.addLast(
+         Identifier.fromNamespaceAndPath("voicemage", "mana_bar"),
+         (graphics, delta) -> ManaHud.render(
+            graphics, Minecraft.getInstance(), manaTenths, maxManaTenths, voice.displayStatus(), feedback, feedbackTicks, voice.isListening()
+         )
+      );
+      HudElementRegistry.addLast(
+         Identifier.fromNamespaceAndPath("voicemage", "explosion_impact_frame"),
+         (graphics, delta) -> ExplosionImpactFrame.render(graphics, Minecraft.getInstance())
+      );
+   }
+
+   private static void heardSpell(Spell spell, String transcript) {
+      Minecraft client = Minecraft.getInstance();
+      client.execute(() -> {
+         if (client.player != null && client.getConnection() != null) {
+            if (spell != null) {
+               feedback = "Heard: " + displayName(spell);
+               feedbackTicks = 35;
+               ClientPlayNetworking.send(new CastSpellPayload(spell.networkId()));
+            } else {
+               VoicemageConfig.CustomSpellEntry custom = VoicemageConfig.INSTANCE.findCustomSpell(transcript);
+               if (custom != null) {
+                  feedback = "Heard: " + custom.phrase;
+                  feedbackTicks = 35;
+                  triggerCustomSpellClientVisual(client, custom);
+                  ClientPlayNetworking.send(new CastCustomSpellPayload(custom.phrase));
+               }
+            }
+         }
+      });
+   }
+
+   private static void triggerCustomSpellClientVisual(Minecraft client, VoicemageConfig.CustomSpellEntry custom) {
+      if (client.level == null || client.player == null) {
+         return;
+      }
+
+      HitResult hit = client.hitResult;
+      Vec3 pos = (hit != null && hit.getType() != HitResult.Type.MISS)
+         ? hit.getLocation()
+         : client.player.getEyePosition().add(client.player.getLookAngle().scale(8.0));
+
+      ParticleType<?> particleType = VoicemageConfig.parseParticle(custom.particleName);
+      if (particleType instanceof ParticleOptions options) {
+         for (int i = 0; i < 35; i++) {
+            double ox = (client.level.getRandom().nextDouble() - 0.5) * 0.8;
+            double oy = (client.level.getRandom().nextDouble() - 0.5) * 0.8;
+            double oz = (client.level.getRandom().nextDouble() - 0.5) * 0.8;
+            client.level.addParticle(options, pos.x + ox, pos.y + oy + 0.5, pos.z + oz, ox * 0.1, oy * 0.1, oz * 0.1);
+         }
+      }
+   }
+
+   private static void acceptMana(ManaSyncPayload payload) {
+      manaTenths = payload.manaTenths();
+      maxManaTenths = payload.maxManaTenths();
+      if (payload.result() != 0) {
+         Spell spell = Spell.byNetworkId(payload.spellId());
+         String name = spell == null ? "Spell" : displayName(spell);
+
+         feedback = switch (payload.result()) {
+            case 1 -> name + " cast!";
+            case 2 -> "Not enough mana for " + name;
+            case 3 -> "Incantation too fast";
+            case 4 -> name + " needs a valid target or path";
+            default -> "";
+         };
+         feedbackTicks = payload.result() == 1 ? 45 : 65;
+      }
+   }
+
+   public static void updateVoiceGrammar() {
+      if (voice != null) {
+         voice.updateGrammar();
+      }
+   }
+
+   private static String displayName(Spell spell) {
+      return spell.displayName();
+   }
+}

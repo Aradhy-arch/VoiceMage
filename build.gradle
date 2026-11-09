@@ -1,0 +1,111 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Minecraft 26.x is unobfuscated: Mojang names, no mappings and no remapping needed.
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Offline speech recognition (bundled into the mod jar as jar-in-jar).
+	// JNA is already shipped with Minecraft, so Vosk's own JNA dependency is not nested.
+	implementation "com.alphacephei:vosk:${project.vosk_version}"
+	include("com.alphacephei:vosk:${project.vosk_version}") {
+		transitive = false
+	}
+}
+
+// The speech model is bundled into the mod jar, so players never have to download anything.
+def speechModelName = 'vosk-model-small-en-us-0.15'
+def speechModelSha256 = '30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498'
+def speechModelFile = layout.buildDirectory.file("speech-model/${speechModelName}.zip")
+
+def sha256Of = { File file ->
+	def digest = java.security.MessageDigest.getInstance('SHA-256')
+	file.withInputStream { input ->
+		byte[] buffer = new byte[65536]
+		int read
+		while ((read = input.read(buffer)) != -1) {
+			digest.update(buffer, 0, read)
+		}
+	}
+	return digest.digest().encodeHex().toString()
+}
+
+tasks.register('downloadSpeechModel') {
+	description = 'Downloads the Vosk speech model that is bundled into the mod jar (checksum verified)'
+	outputs.file(speechModelFile)
+	doLast {
+		File target = speechModelFile.get().asFile
+		if (target.exists() && sha256Of(target) == speechModelSha256) {
+			return
+		}
+
+		target.parentFile.mkdirs()
+		URI.create("https://alphacephei.com/vosk/models/${speechModelName}.zip").toURL().withInputStream { input ->
+			target.withOutputStream { output -> output << input }
+		}
+
+		String actual = sha256Of(target)
+		if (actual != speechModelSha256) {
+			target.delete()
+			throw new GradleException("Speech model checksum mismatch: expected ${speechModelSha256}, got ${actual}")
+		}
+	}
+}
+
+processResources {
+	inputs.property "version", project.version
+	dependsOn 'downloadSpeechModel'
+
+	from(speechModelFile) {
+		into "assets/voicemage/model"
+	}
+
+	filesMatching("fabric.mod.json") {
+		expand "version": inputs.properties.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+	it.options.encoding = "UTF-8"
+}
+
+java {
+	// Generates the -sources jar next to the mod jar.
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}" }
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+}

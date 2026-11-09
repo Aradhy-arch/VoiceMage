@@ -191,7 +191,7 @@ public final class VoicemageClient implements ClientModInitializer {
             case 1 -> name + " cast!";
             case 2 -> "Not enough mana for " + name;
             case 3 -> "Incantation too fast";
-            case 4 -> name + " needs a valid target or path";
+            case 4 -> spell == Spell.FLY ? "Fly is on cooldown or active" : name + " needs a valid target or path";
             default -> "";
          };
          feedbackTicks = payload.result() == 1 ? 45 : 65;

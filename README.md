@@ -56,7 +56,7 @@ Speech recognition runs **100% locally on your machine** via bundled offline Vos
 | 🐑 **Polymorph** | 55 | Transfigures targeted creatures into a harmless wandering sheep. | Utility |
 | 🔬 **Shrink** | 40 | Shrinks targeted entity size by 65%, reducing reach and hitbox. | Utility |
 | 💥 **Explosion** | 100 | The legendary Megumin-style tactical blast of cataclysmic destruction. | Offense |
-| 🕊️ **Fly** | 30 | Grants true creative flight with wind swirls and end rod sparkles. | Utility |
+| 🕊️ **Fly** | 30 | Grants creative flight for 10s with wind swirls, followed by a 5s cooldown. | Utility |
 | 💀 **Get Doomed** | 50 | Halves target HP using dark warden magic. Stops at half a heart. | Offense |
 
 ---
@@ -127,6 +127,7 @@ You can edit all settings in-game via **`/voicemage settings`**, or directly in 
   "pitfallEnabled": true,
   "flyManaCost": 30,
   "flyDurationTicks": 200,
+  "flyCooldownTicks": 100,
   "getDoomedManaCost": 50,
   "customSpells": [
     {
@@ -150,7 +151,7 @@ You can edit all settings in-game via **`/voicemage settings`**, or directly in 
 | `manaRegenerationPerSecond` | 5 | Mana regained per second |
 | `minimumCastIntervalTicks` | 6 | Delay between casts (20 ticks = 1s) |
 | `explosionChantRequired` | true | Require full chant for Explosion |
-| `flyManaCost` / `flyDurationTicks` | 30 / 200 | Mana cost and duration (in ticks) for Fly |
+| `flyManaCost` / `flyDurationTicks` / `flyCooldownTicks` | 30 / 200 / 100 | Mana cost, duration (ticks), and cooldown (ticks) for Fly |
 | `getDoomedManaCost` | 50 | Mana cost for Get Doomed |
 | `fireballExplosionPower` | 4 | Fireball blast strength |
 | `healAmount` | 8 | Health restored by Heal (2 = 1 heart) |

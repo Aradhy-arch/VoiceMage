@@ -46,6 +46,7 @@ public final class VoicemageConfig {
    public int explosionManaCost = 100;
    public int flyManaCost = 30;
    public int flyDurationTicks = 200;
+   public int flyCooldownTicks = 100;
    public int getDoomedManaCost = 50;
    public boolean explosionChantRequired = true;
    public int fireballExplosionPower = 4;
@@ -406,6 +407,7 @@ public final class VoicemageConfig {
       this.explosionCraterRadius = clamp(this.explosionCraterRadius, 8, 64);
       this.flyManaCost = clamp(this.flyManaCost, 0, 100);
       this.flyDurationTicks = clamp(this.flyDurationTicks, 20, 1200);
+      this.flyCooldownTicks = clamp(this.flyCooldownTicks, 0, 1200);
       this.getDoomedManaCost = clamp(this.getDoomedManaCost, 0, 100);
       if (this.customSpells == null) {
          this.customSpells = new ArrayList<>();

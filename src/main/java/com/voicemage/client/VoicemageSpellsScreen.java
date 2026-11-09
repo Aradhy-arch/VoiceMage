@@ -100,7 +100,7 @@ public final class VoicemageSpellsScreen extends Screen {
       list.add(new SpellDisplayEntry(Spell.POLYMORPH, "Transfigures the targeted creature into a harmless sheep.", Category.UTILITY));
       list.add(new SpellDisplayEntry(Spell.SHRINK, "Shrinks targeted entity to miniature size, reducing reach & hitbox.", Category.UTILITY));
       list.add(new SpellDisplayEntry(Spell.EXPLOSION, "Cataclysmic Megumin-style blast of sheer obliteration.", Category.OFFENSE));
-      list.add(new SpellDisplayEntry(Spell.FLY, "Grants true creative flight with gust swirls and end rod sparkles.", Category.UTILITY));
+      list.add(new SpellDisplayEntry(Spell.FLY, "Grants creative flight for 10s with wind swirls, followed by a 5s cooldown.", Category.UTILITY));
       list.add(new SpellDisplayEntry(Spell.GET_DOOMED, "Halves target HP (stops at 0.5 hearts) using dark warden sonic magic.", Category.OFFENSE));
 
       for (VoicemageConfig.CustomSpellEntry custom : VoicemageConfig.INSTANCE.customSpells) {

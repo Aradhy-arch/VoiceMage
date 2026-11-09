@@ -31,6 +31,7 @@ public final class VoicemageSettingsScreen extends Screen {
    private EditBox manaRegenBox;
    private EditBox castIntervalBox;
    private EditBox flyDurationBox;
+   private EditBox flyCooldownBox;
    private EditBox flyManaBox;
    private EditBox getDoomedManaBox;
    private boolean chantRequired;
@@ -137,9 +138,13 @@ public final class VoicemageSettingsScreen extends Screen {
       this.castIntervalBox.setValue(String.valueOf(cfg.minimumCastIntervalTicks));
       this.addRenderableWidget(this.castIntervalBox);
 
-      this.flyDurationBox = new EditBox(this.font, col1X, contentY + 102, 160, 16, Component.literal("Fly Duration"));
+      this.flyDurationBox = new EditBox(this.font, col1X, contentY + 102, 78, 16, Component.literal("Fly Duration"));
       this.flyDurationBox.setValue(String.valueOf(cfg.flyDurationTicks));
       this.addRenderableWidget(this.flyDurationBox);
+
+      this.flyCooldownBox = new EditBox(this.font, col1X + 82, contentY + 102, 78, 16, Component.literal("Fly Cooldown"));
+      this.flyCooldownBox.setValue(String.valueOf(cfg.flyCooldownTicks));
+      this.addRenderableWidget(this.flyCooldownBox);
 
       // Column 2
       int col2X = boxX + 210;
@@ -428,6 +433,10 @@ public final class VoicemageSettingsScreen extends Screen {
          } catch (NumberFormatException ignored) {
          }
          try {
+            cfg.flyCooldownTicks = Integer.parseInt(this.flyCooldownBox.getValue().trim());
+         } catch (NumberFormatException ignored) {
+         }
+         try {
             cfg.flyManaCost = Integer.parseInt(this.flyManaBox.getValue().trim());
          } catch (NumberFormatException ignored) {
          }
@@ -524,7 +533,7 @@ public final class VoicemageSettingsScreen extends Screen {
          graphics.text(this.font, "Max Mana Pool:", col1X, contentY + 2, 0xFFDDDDDD, true);
          graphics.text(this.font, "Mana Regen (/sec):", col1X, contentY + 32, 0xFFDDDDDD, true);
          graphics.text(this.font, "Cast Interval (ticks):", col1X, contentY + 62, 0xFFDDDDDD, true);
-         graphics.text(this.font, "Fly Duration (ticks):", col1X, contentY + 92, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Fly Dur / CD (ticks):", col1X, contentY + 92, 0xFFDDDDDD, true);
 
          int col2X = boxX + 210;
          graphics.text(this.font, "Fly Mana Cost:", col2X, contentY + 2, 0xFFDDDDDD, true);

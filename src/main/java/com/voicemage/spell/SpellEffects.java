@@ -82,6 +82,7 @@ final class SpellEffects {
    private int journalCountdown;
    private final Map<UUID, Long> frozenUntil = new HashMap<>();
    private final Map<UUID, Long> flightUntil = new HashMap<>();
+   private final Map<UUID, Long> flightCooldownUntil = new HashMap<>();
 
    boolean cast(ServerPlayer player, Spell spell) {
       return switch (spell) {
@@ -132,6 +133,7 @@ final class SpellEffects {
          }
       }
       this.flightUntil.clear();
+      this.flightCooldownUntil.clear();
 
       this.temporaryBlocks.clear();
       this.clones.forEach(task -> {
@@ -1065,11 +1067,29 @@ final class SpellEffects {
 
    private boolean fly(ServerPlayer player) {
       ServerLevel level = player.level();
+      long now = level.getGameTime();
+
+      Long activeFlight = this.flightUntil.get(player.getUUID());
+      if (activeFlight != null && now < activeFlight) {
+         long remainingSec = (activeFlight - now + 19) / 20;
+         player.sendSystemMessage(Component.literal("§cFlight is already active! (" + remainingSec + "s remaining)"));
+         return false;
+      }
+
+      Long cooldownEnd = this.flightCooldownUntil.get(player.getUUID());
+      if (cooldownEnd != null && now < cooldownEnd) {
+         long remainingSec = (cooldownEnd - now + 19) / 20;
+         player.sendSystemMessage(Component.literal("§cFlight is on cooldown! (" + remainingSec + "s remaining)"));
+         return false;
+      }
+
       player.getAbilities().mayfly = true;
       player.onUpdateAbilities();
 
-      long expires = level.getGameTime() + VoicemageConfig.INSTANCE.flyDurationTicks;
+      long expires = now + VoicemageConfig.INSTANCE.flyDurationTicks;
+      long cooldownExpires = expires + VoicemageConfig.INSTANCE.flyCooldownTicks;
       this.flightUntil.put(player.getUUID(), expires);
+      this.flightCooldownUntil.put(player.getUUID(), cooldownExpires);
 
       Vec3 pos = player.position();
       level.sendParticles(ParticleTypes.CLOUD, pos.x, pos.y, pos.z, 35, 0.5, 0.5, 0.5, 0.05);
@@ -1158,13 +1178,23 @@ final class SpellEffects {
             continue;
          }
 
-         if (player.level().getGameTime() >= entry.getValue()) {
+         long now = player.level().getGameTime();
+         long remainingTicks = entry.getValue() - now;
+
+         if (remainingTicks <= 0) {
             if (!player.isCreative() && !player.isSpectator()) {
                player.getAbilities().mayfly = false;
                player.getAbilities().flying = false;
                player.onUpdateAbilities();
             }
+            int cdSeconds = Math.max(1, (VoicemageConfig.INSTANCE.flyCooldownTicks + 19) / 20);
+            player.sendSystemMessage(Component.literal("§eFlight has expired! (" + cdSeconds + "s cooldown started)"));
+            player.level().sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY(), player.getZ(), 20, 0.4, 0.4, 0.4, 0.05);
             iterator.remove();
+         } else if (remainingTicks == 60) {
+            player.sendSystemMessage(Component.literal("§6Flight expiring in 3 seconds..."));
+         } else if (remainingTicks == 20) {
+            player.sendSystemMessage(Component.literal("§cFlight expiring in 1 second!"));
          }
       }
    }

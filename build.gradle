@@ -128,6 +128,17 @@ tasks.register('inspectMinecraft') {
 			println("Screen reflection error: " + e)
 		}
 		try {
+			def mcClass = cl.loadClass("net.minecraft.client.Minecraft")
+			println("Minecraft Screen methods:")
+			mcClass.methods.each { m ->
+				if (m.name.toLowerCase().contains("screen")) {
+					println("  " + m)
+				}
+			}
+		} catch (Exception e) {
+			println("Minecraft reflection error: " + e)
+		}
+		try {
 			def extractorClass = cl.loadClass("net.minecraft.client.gui.GuiGraphicsExtractor")
 			println("GuiGraphicsExtractor methods:")
 			extractorClass.methods.each { m ->

@@ -9,7 +9,7 @@ import com.voicemage.spell.Spell;
 import java.util.List;
 import java.util.Locale;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -494,7 +494,7 @@ public final class VoicemageSettingsScreen extends Screen {
    }
 
    @Override
-   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+   public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
       // Dark slate background overlay
       graphics.fill(0, 0, this.width, this.height, 0xD008090E);
 
@@ -512,8 +512,8 @@ public final class VoicemageSettingsScreen extends Screen {
       // Header Banner
       graphics.fill(boxX, boxY, boxX + boxW, boxY + 26, 0xFF1B1D28);
       graphics.fill(boxX, boxY + 26, boxX + boxW, boxY + 27, 0xFFD4AF37);
-      graphics.drawCenteredString(this.font, "§6§l✦ VOICEMAGE CONFIGURATION ✦§r", this.width / 2, boxY + 8, 0xFFFFAA00);
-      graphics.drawString(this.font, "§d[OP CONFIG]§r", boxX + 8, boxY + 9, 0xFFFF77FF, false);
+      graphics.centeredText(this.font, "§6§l✦ VOICEMAGE CONFIGURATION ✦§r", this.width / 2, boxY + 8, 0xFFFFAA00);
+      graphics.text(this.font, "§d[OP CONFIG]§r", boxX + 8, boxY + 9, 0xFFFF77FF, false);
 
       // Content Header labels
       int tabY = boxY + 28;
@@ -521,45 +521,45 @@ public final class VoicemageSettingsScreen extends Screen {
 
       if (this.activeTab == TAB_MANA) {
          int col1X = boxX + 18;
-         graphics.drawString(this.font, "Max Mana Pool:", col1X, contentY + 2, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Mana Regen (/sec):", col1X, contentY + 32, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Cast Interval (ticks):", col1X, contentY + 62, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Fly Duration (ticks):", col1X, contentY + 92, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Max Mana Pool:", col1X, contentY + 2, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Mana Regen (/sec):", col1X, contentY + 32, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Cast Interval (ticks):", col1X, contentY + 62, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Fly Duration (ticks):", col1X, contentY + 92, 0xFFDDDDDD, true);
 
          int col2X = boxX + 210;
-         graphics.drawString(this.font, "Fly Mana Cost:", col2X, contentY + 2, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Get Doomed Mana Cost:", col2X, contentY + 32, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Explosion Chant Mode:", col2X, contentY + 62, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Terrain Pitfall Trap:", col2X, contentY + 92, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Fly Mana Cost:", col2X, contentY + 2, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Get Doomed Mana Cost:", col2X, contentY + 32, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Explosion Chant Mode:", col2X, contentY + 62, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Terrain Pitfall Trap:", col2X, contentY + 92, 0xFFDDDDDD, true);
       } else if (this.activeTab == TAB_COMBAT) {
          int col1X = boxX + 18;
-         graphics.drawString(this.font, "Explosion Power:", col1X, contentY + 2, 0xFFFF8888, true);
-         graphics.drawString(this.font, "Explosion Range:", col1X, contentY + 32, 0xFFFF8888, true);
-         graphics.drawString(this.font, "Explosion Delay (ticks):", col1X, contentY + 62, 0xFFFF8888, true);
-         graphics.drawString(this.font, "Explosion Fall Height:", col1X, contentY + 92, 0xFFFF8888, true);
+         graphics.text(this.font, "Explosion Power:", col1X, contentY + 2, 0xFFFF8888, true);
+         graphics.text(this.font, "Explosion Range:", col1X, contentY + 32, 0xFFFF8888, true);
+         graphics.text(this.font, "Explosion Delay (ticks):", col1X, contentY + 62, 0xFFFF8888, true);
+         graphics.text(this.font, "Explosion Fall Height:", col1X, contentY + 92, 0xFFFF8888, true);
 
          int col2X = boxX + 210;
-         graphics.drawString(this.font, "Fireball Power:", col2X, contentY + 2, 0xFFFFBB66, true);
-         graphics.drawString(this.font, "Meteor Power:", col2X, contentY + 32, 0xFFFFBB66, true);
-         graphics.drawString(this.font, "Lightning Damage (HP):", col2X, contentY + 62, 0xFF88CCFF, true);
-         graphics.drawString(this.font, "Heal HP:", col2X, contentY + 92, 0xFF88FF88, true);
-         graphics.drawString(this.font, "Skill Range:", col2X + 82, contentY + 92, 0xFF88CCFF, true);
+         graphics.text(this.font, "Fireball Power:", col2X, contentY + 2, 0xFFFFBB66, true);
+         graphics.text(this.font, "Meteor Power:", col2X, contentY + 32, 0xFFFFBB66, true);
+         graphics.text(this.font, "Lightning Damage (HP):", col2X, contentY + 62, 0xFF88CCFF, true);
+         graphics.text(this.font, "Heal HP:", col2X, contentY + 92, 0xFF88FF88, true);
+         graphics.text(this.font, "Skill Range:", col2X + 82, contentY + 92, 0xFF88CCFF, true);
       } else {
          int leftX = boxX + 16;
          int rightX = boxX + 205;
-         graphics.drawString(this.font, "Spell Phrase (what you say):", leftX, contentY, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Particle Name (Minecraft ID):", leftX, contentY + 28, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Mana:", leftX, contentY + 74, 0xFFDDDDDD, true);
-         graphics.drawString(this.font, "Power / Dmg:", leftX + 90, contentY + 74, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Spell Phrase (what you say):", leftX, contentY, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Particle Name (Minecraft ID):", leftX, contentY + 28, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Mana:", leftX, contentY + 74, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Power / Dmg:", leftX + 90, contentY + 74, 0xFFDDDDDD, true);
 
          List<VoicemageConfig.CustomSpellEntry> spells = VoicemageConfig.INSTANCE.customSpells;
          int totalSpells = spells.size();
-         graphics.drawString(this.font, "Registered (" + totalSpells + "):", rightX, contentY, 0xFFFFAA00, true);
+         graphics.text(this.font, "Registered (" + totalSpells + "):", rightX, contentY, 0xFFFFAA00, true);
 
          int itemStartY = contentY + 16;
          if (spells.isEmpty()) {
-            graphics.drawString(this.font, "No custom spells registered.", rightX, itemStartY + 10, 0xFF888888, false);
-            graphics.drawString(this.font, "Use fields on left to create one!", rightX, itemStartY + 24, 0xFF888888, false);
+            graphics.text(this.font, "No custom spells registered.", rightX, itemStartY + 10, 0xFF888888, false);
+            graphics.text(this.font, "Use fields on left to create one!", rightX, itemStartY + 24, 0xFF888888, false);
          } else {
             int startIndex = this.customPage * SPELLS_PER_PAGE;
             for (int i = 0; i < SPELLS_PER_PAGE; i++) {
@@ -574,7 +574,7 @@ public final class VoicemageSettingsScreen extends Screen {
                   if (phraseText.length() > 16) {
                      phraseText = phraseText.substring(0, 14) + "..";
                   }
-                  graphics.drawString(this.font, phraseText, rightX + 6, itemY + 3, 0xFF55FF55, true);
+                  graphics.text(this.font, phraseText, rightX + 6, itemY + 3, 0xFF55FF55, true);
 
                   String details = entry.particleName;
                   if (details.startsWith("minecraft:")) {
@@ -584,7 +584,7 @@ public final class VoicemageSettingsScreen extends Screen {
                      details = details.substring(0, 12) + "..";
                   }
                   details += " (M:" + (int)entry.manaCost + " P:" + entry.damageOrEffect + ")";
-                  graphics.drawString(this.font, details, rightX + 6, itemY + 13, 0xFFAAAAAA, false);
+                  graphics.text(this.font, details, rightX + 6, itemY + 13, 0xFFAAAAAA, false);
                }
             }
          }
@@ -595,9 +595,9 @@ public final class VoicemageSettingsScreen extends Screen {
       graphics.fill(boxX, bottomSepY, boxX + boxW, bottomSepY + 1, 0xFF2A2D3D);
 
       if (!this.statusMessage.isEmpty()) {
-         graphics.drawCenteredString(this.font, this.statusMessage, this.width / 2, bottomSepY - 11, this.statusColor);
+         graphics.centeredText(this.font, this.statusMessage, this.width / 2, bottomSepY - 11, this.statusColor);
       }
 
-      super.render(graphics, mouseX, mouseY, partialTick);
+      super.extractRenderState(graphics, mouseX, mouseY, partialTick);
    }
 }

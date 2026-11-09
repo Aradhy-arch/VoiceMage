@@ -19,7 +19,7 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew inspectMinecraft build || ./gradlew inspectMinecraft
+      - run: ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: voicemage

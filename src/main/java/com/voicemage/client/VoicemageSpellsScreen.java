@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -287,7 +287,7 @@ public final class VoicemageSpellsScreen extends Screen {
    }
 
    @Override
-   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+   public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
       graphics.fill(0, 0, this.width, this.height, 0xD008090E);
 
       int boxW = 390;
@@ -304,8 +304,8 @@ public final class VoicemageSpellsScreen extends Screen {
       // Header Banner
       graphics.fill(boxX, boxY, boxX + boxW, boxY + 26, 0xFF1B1D28);
       graphics.fill(boxX, boxY + 26, boxX + boxW, boxY + 27, 0xFFD4AF37);
-      graphics.drawCenteredString(this.font, "§6§l✦ VOICEMAGE GRIMOIRE ✦§r §7— Spell Tome§r", this.width / 2, boxY + 8, 0xFFFFAA00);
-      graphics.drawString(this.font, "§d[OP TUNER]§r", boxX + 8, boxY + 9, 0xFFFF77FF, false);
+      graphics.centeredText(this.font, "§6§l✦ VOICEMAGE GRIMOIRE ✦§r §7— Spell Tome§r", this.width / 2, boxY + 8, 0xFFFFAA00);
+      graphics.text(this.font, "§d[OP TUNER]§r", boxX + 8, boxY + 9, 0xFFFF77FF, false);
 
       // Spell Cards Rendering
       List<SpellDisplayEntry> entries = this.filteredEntries();
@@ -317,7 +317,7 @@ public final class VoicemageSpellsScreen extends Screen {
       int cardW = boxW - 20;
 
       if (entries.isEmpty()) {
-         graphics.drawCenteredString(this.font, "§7No spells found matching your criteria.§r", this.width / 2, boxY + 100, 0xFFAAAAAA);
+         graphics.centeredText(this.font, "§7No spells found matching your criteria.§r", this.width / 2, boxY + 100, 0xFFAAAAAA);
       } else {
          for (int i = 0; i < SPELLS_PER_PAGE; i++) {
             int idx = startIndex + i;
@@ -341,32 +341,32 @@ public final class VoicemageSpellsScreen extends Screen {
 
                // Top Line: Spell Name & Category Badge
                String title = "§6§l" + entry.name + "§r";
-               graphics.drawString(this.font, title, cardX + 8, cardY + 4, 0xFFFFAA00, true);
+               graphics.text(this.font, title, cardX + 8, cardY + 4, 0xFFFFAA00, true);
 
                String badge = "§8[§7" + entry.category.label.toUpperCase(Locale.ROOT) + "§8]§r";
-               graphics.drawString(this.font, badge, cardX + 115, cardY + 4, 0xFFAAAAAA, false);
+               graphics.text(this.font, badge, cardX + 115, cardY + 4, 0xFFAAAAAA, false);
 
                // Mana Tuner Label & Cost Display
                int currentCost = entry.isCustom()
                   ? this.pendingCustomCosts.getOrDefault(entry.custom.phrase, (int)Math.ceil(entry.custom.manaCost))
                   : this.pendingCosts.getOrDefault(entry.spell, VoicemageConfig.INSTANCE.manaCost(entry.spell));
 
-               graphics.drawString(this.font, "§bMana:§r", cardX + 230, cardY + 5, 0xFF88CCFF, true);
-               graphics.drawCenteredString(this.font, "§d" + currentCost + "§r", cardX + 291, cardY + 5, 0xFFFF88FF);
+               graphics.text(this.font, "§bMana:§r", cardX + 230, cardY + 5, 0xFF88CCFF, true);
+               graphics.centeredText(this.font, "§d" + currentCost + "§r", cardX + 291, cardY + 5, 0xFFFF88FF);
 
                // Middle Line: Voice Phrase
                String phraseStr = "§eIncantation: §f\"" + entry.phrase + "\"§r";
                if (phraseStr.length() > 60) {
                   phraseStr = phraseStr.substring(0, 57) + "...\"";
                }
-               graphics.drawString(this.font, phraseStr, cardX + 8, cardY + 17, 0xFFCCCCCC, false);
+               graphics.text(this.font, phraseStr, cardX + 8, cardY + 17, 0xFFCCCCCC, false);
 
                // Bottom Line: Description
                String desc = "§7" + entry.description + "§r";
                if (desc.length() > 64) {
                   desc = desc.substring(0, 61) + "...";
                }
-               graphics.drawString(this.font, desc, cardX + 8, cardY + 29, 0xFF888888, false);
+               graphics.text(this.font, desc, cardX + 8, cardY + 29, 0xFF888888, false);
             }
          }
       }
@@ -377,12 +377,12 @@ public final class VoicemageSpellsScreen extends Screen {
 
       // Page counter
       String pageCounter = "§7Page §f" + (this.page + 1) + " §7of §f" + (maxPage + 1) + " §7(" + totalEntries + " Spells)§r";
-      graphics.drawCenteredString(this.font, pageCounter, this.width / 2, bottomSepY + 6, 0xFFCCCCCC);
+      graphics.centeredText(this.font, pageCounter, this.width / 2, bottomSepY + 6, 0xFFCCCCCC);
 
       if (!this.statusMessage.isEmpty()) {
-         graphics.drawCenteredString(this.font, this.statusMessage, this.width / 2, bottomSepY - 10, this.statusColor);
+         graphics.centeredText(this.font, this.statusMessage, this.width / 2, bottomSepY - 10, this.statusColor);
       }
 
-      super.render(graphics, mouseX, mouseY, partialTick);
+      super.extractRenderState(graphics, mouseX, mouseY, partialTick);
    }
 }

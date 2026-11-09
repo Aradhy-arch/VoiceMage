@@ -18,6 +18,7 @@ import com.voicemage.spell.Spell;
 import java.util.Locale;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.commands.Commands;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -31,8 +32,7 @@ public final class VoicemageNetworking {
    }
 
    private static boolean isOperator(ServerPlayer player) {
-      MinecraftServer server = player.getServer();
-      return server != null && server.getPlayerList().isOp(player.getGameProfile());
+      return Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(player.createCommandSourceStack());
    }
 
    public static void openSettingsScreen(ServerPlayer player) {

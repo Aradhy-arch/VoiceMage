@@ -73,13 +73,13 @@ public final class VoicemageClient implements ClientModInitializer {
       ClientPlayNetworking.registerGlobalReceiver(
          OpenSettingsPayload.TYPE, (payload, context) -> context.client().execute(() -> {
             VoicemageConfig.applyFullConfigJson(payload.configJson());
-            context.client().setScreen(new VoicemageSettingsScreen());
+            context.client().setScreenAndShow(new VoicemageSettingsScreen());
          })
       );
       ClientPlayNetworking.registerGlobalReceiver(
          OpenSpellsPayload.TYPE, (payload, context) -> context.client().execute(() -> {
             VoicemageConfig.applyFullConfigJson(payload.configJson());
-            context.client().setScreen(new VoicemageSpellsScreen());
+            context.client().setScreenAndShow(new VoicemageSpellsScreen());
          })
       );
       Category category = Category.register(Identifier.fromNamespaceAndPath("voicemage", "controls"));

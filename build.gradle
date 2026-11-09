@@ -110,43 +110,4 @@ publishing {
 	}
 }
 
-tasks.register('inspectMinecraft') {
-	doLast {
-		def urls = sourceSets.main.compileClasspath.files.collect { it.toURI().toURL() }
-		def cl = new URLClassLoader(urls as URL[], getClass().classLoader)
-		println("=== INSPECTING MINECRAFT 26.2 ===")
-		try {
-			def screenClass = cl.loadClass("net.minecraft.client.gui.screens.Screen")
-			println("Screen superclass: " + screenClass.superclass)
-			println("Screen methods:")
-			screenClass.methods.each { m ->
-				if (m.name.contains("render") || m.name.contains("draw") || m.name.contains("extract")) {
-					println("  " + m)
-				}
-			}
-		} catch (Exception e) {
-			println("Screen reflection error: " + e)
-		}
-		try {
-			def mcClass = cl.loadClass("net.minecraft.client.Minecraft")
-			println("Minecraft Screen methods:")
-			mcClass.methods.each { m ->
-				if (m.name.toLowerCase().contains("screen")) {
-					println("  " + m)
-				}
-			}
-		} catch (Exception e) {
-			println("Minecraft reflection error: " + e)
-		}
-		try {
-			def extractorClass = cl.loadClass("net.minecraft.client.gui.GuiGraphicsExtractor")
-			println("GuiGraphicsExtractor methods:")
-			extractorClass.methods.each { m ->
-				println("  " + m)
-			}
-		} catch (Exception e) {
-			println("GuiGraphicsExtractor reflection error: " + e)
-		}
-		println("=== END INSPECT ===")
-	}
-}
+

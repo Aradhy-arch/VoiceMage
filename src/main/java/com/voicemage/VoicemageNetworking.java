@@ -31,7 +31,8 @@ public final class VoicemageNetworking {
    }
 
    private static boolean isOperator(ServerPlayer player) {
-      return player.createCommandSourceStack().hasPermission(2);
+      MinecraftServer server = player.getServer();
+      return server != null && server.getPlayerList().isOp(player.getGameProfile());
    }
 
    public static void openSettingsScreen(ServerPlayer player) {

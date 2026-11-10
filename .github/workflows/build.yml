@@ -22,9 +22,10 @@ jobs:
       - name: Build and inspect
         run: |
           ./gradlew compileJava || true
-          MC_JAR=$(find ~/.gradle/caches -name "*minecraft*.jar" | grep -v "sources" | head -n 1)
-          echo "Found Minecraft JAR: $MC_JAR"
-          javap -cp "$MC_JAR" net.minecraft.client.gui.components.MultiLineEditBox || true
+          for j in $(find ~/.gradle/caches/fabric-loom -name "*.jar"); do
+            echo "Checking $j"
+            javap -cp "$j" net.minecraft.client.gui.components.MultiLineEditBox 2>/dev/null && break || true
+          done
           ./gradlew build
       - uses: actions/upload-artifact@v4
         with:

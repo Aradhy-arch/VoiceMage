@@ -5,7 +5,6 @@
 ![Loader](https://img.shields.io/badge/Loader-Fabric-DBD0B4)
 ![Java](https://img.shields.io/badge/Java-25%2B-ED8B00)
 ![License](https://img.shields.io/badge/License-MIT-2E8B57)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white)](https://discord.gg/cPfjZetypC)
 
 **VoiceMage** is a Fabric mod for Minecraft 26.2 that turns your microphone into an arcane spellbook. Say *"fireball"* and a fireball flies. Say *"meteor"* and the sky burns. Say *"fly"* and take to the skies. 
 

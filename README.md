@@ -190,8 +190,3 @@ Compiled JARs will be generated in `build/libs/`.
 * **VoiceMage** was originally created by **Cayce** and is licensed under the [MIT License](LICENSE).
 * Rebuilt and maintained with ❤️ by **Aradhy**.
 * Speech recognition powered by [Vosk](https://github.com/alphacep/vosk-api) (Apache 2.0).
-
----
-
-💬 **Need Support or Have Questions?**  
-Join our community on Discord: **[discord.gg/cPfjZetypC](https://discord.gg/cPfjZetypC)**

@@ -512,24 +512,6 @@ public final class VoicemageSettingsScreen extends Screen {
       }
    }
 
-      if (removed) {
-         VoicemageConfig.save();
-         ClientPlayNetworking.send(new DeleteCustomSpellPayload(normalized));
-         VoicemageClient.updateVoiceGrammar();
-         this.statusMessage = "Deleted spell \"" + normalized + "\"!";
-         this.statusColor = 0xFFFFFF55;
-         this.phraseBox.setValue("");
-         this.particleBox.setValue("");
-         this.customManaBox.setValue("20");
-         this.customPowerBox.setValue("5.0");
-         this.selectedCustomSpell = null;
-         this.refresh();
-      } else {
-         this.statusMessage = "No spell found matching \"" + normalized + "\"";
-         this.statusColor = 0xFFFF5555;
-      }
-   }
-
    private void saveCurrentTabValues() {
       VoicemageConfig cfg = VoicemageConfig.INSTANCE;
       if (this.activeTab == TAB_MANA && this.maxManaBox != null) {

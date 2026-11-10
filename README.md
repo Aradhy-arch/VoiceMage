@@ -23,12 +23,12 @@ Speech recognition runs **100% locally on your machine** via bundled offline Vos
 * **🎤 Microphone Selector:** Switch input devices seamlessly in-game with `/voicemic`. Non-standard 16 kHz audio devices are converted automatically.
 * **⚡ Instant Mute:** Press **V** at any time to toggle microphone listening.
 
-### 🖥️ In-Game Dark Operator GUIs
-* **⚙️ Configuration Menu (`/voicemage settings`):** A dark obsidian GUI inspired by *Recolourful Containers DARK*. Easily tune `voicemage.json` parameters via dedicated tabs:
-  * **⚡ Mana & Rules:** Pool size, regeneration rate, cast interval, explosion chant toggles, and flight duration.
+### 🖥️ In-Game Dark GUIs
+* **📖 Spell Grimoire Guidebook (`/voicemage` or `/voicemage spells`):** Accessible to **everyone**! An ancient dark spell tome displaying all 16 built-in spells + custom spells. Filter by category (`Offense`, `Defense`, `Utility`, `Custom`), search in real time, view exact spoken incantations, spell descriptions, and live mana costs set by server operators.
+* **⚙️ Operator Configuration Menu (`/voicemage settings`):** A dark obsidian GUI for operators inspired by *Recolourful Containers DARK*. Easily tune `voicemage.json` parameters via dedicated tabs:
+  * **⚡ Mana & Rules:** Pool size, regeneration rate, cast interval, explosion chant toggles, flight duration, and flight cooldown.
   * **💥 Combat & World:** Explosion power, blast radius, crater depth, fireball power, meteor stats, and lightning damage.
   * **✨ Custom Spells Editor:** Add, test, and delete custom spells with instant particle ID validation and quick presets (`Flame`, `Witch`, `Soul`, `Sonic`, `Cloud`).
-* **📖 Spell Grimoire (`/voicemage spells`):** A dark wizard spell tome displaying all 16 built-in spells + custom spells. Filter by category (`Offense`, `Defense`, `Utility`, `Custom`), search in real time, and **fine-tune live mana costs** directly with interactive `[-]`, `[+]`, and `[Save]` buttons.
 
 ### 🔮 Mana & Server Authority
 * **💧 Mana HUD:** On-screen mana bar with real-time regeneration and voice feedback status.
@@ -56,7 +56,7 @@ Speech recognition runs **100% locally on your machine** via bundled offline Vos
 | 🐑 **Polymorph** | 55 | Transfigures targeted creatures into a harmless wandering sheep. | Utility |
 | 🔬 **Shrink** | 40 | Shrinks targeted entity size by 65%, reducing reach and hitbox. | Utility |
 | 💥 **Explosion** | 100 | The legendary Megumin-style tactical blast of cataclysmic destruction. | Offense |
-| 🕊️ **Fly** | 30 | Grants creative flight for 10s with wind swirls, followed by a 5s cooldown. | Utility |
+| 🕊️ **Fly** | 30 | Grants creative flight for 10s with wind swirls, surprise cutoff, 5s cooldown, and active fall damage. | Utility |
 | 💀 **Get Doomed** | 50 | Halves target HP using dark warden magic. Stops at half a heart. | Offense |
 
 ---
@@ -83,10 +83,9 @@ Operators can toggle whether the chant is required via `/voicemage chant false` 
 
 | Command | Description | Access |
 | :--- | :--- | :--- |
-| `/voicemage settings` | Opens the graphical **VoiceMage Configuration GUI** | **Op Only** |
-| `/voicemage spells` | Opens the graphical **Dark Spell Grimoire** (with live cost tuning) | **Op Only** |
-| `/spells` | Opens the Grimoire (or prints spell list if in console) | **Op Only** |
-| `/voicemage` | Displays current mana cap, regeneration rate, and chant rules | Everyone |
+| `/voicemage` | Opens the graphical **Spells Grimoire Guidebook** (or prints summary in console) | **Everyone** |
+| `/voicemage spells` | Opens the graphical **Spells Grimoire Guidebook** | **Everyone** |
+| `/voicemage settings` | Opens the graphical **Operator Configuration GUI** | **Op Only** |
 | `/voicemage chant <true\|false>` | Toggles whether Explosion requires the full incantation | **Op Only** |
 | `/voicemage regen <rate>` | Sets mana regeneration per second (0–100) | **Op Only** |
 | `/voicemage <spell> <cost>` | Sets mana cost of a specific spell | **Op Only** |

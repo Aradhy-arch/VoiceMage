@@ -36,7 +36,7 @@ public final class VoicemageNetworking {
          return false;
       }
       MinecraftServer server = player.level().getServer();
-      if (server != null && (server.isSingleplayer() || server.isSingleplayerOwner(player.getGameProfile()))) {
+      if (server != null && server.isSingleplayer()) {
          return true;
       }
       return Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(player.createCommandSourceStack());

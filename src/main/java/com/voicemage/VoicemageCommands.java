@@ -28,7 +28,7 @@ public final class VoicemageCommands {
       if (source.getServer() != null && source.getServer().isSingleplayer()) {
          return true;
       }
-      return source.hasPermission(Commands.LEVEL_GAMEMASTERS);
+      return Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(source);
    }
 
    public static void register() {

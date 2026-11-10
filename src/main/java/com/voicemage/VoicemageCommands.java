@@ -23,10 +23,6 @@ public final class VoicemageCommands {
 
    public static void register() {
       CommandRegistrationCallback.EVENT.register((CommandRegistrationCallback)(dispatcher, access, environment) -> {
-         dispatcher.register(spellGuideCommand("spells"));
-         dispatcher.register(spellGuideCommand("grimoire"));
-         dispatcher.register(spellGuideCommand("grimwore"));
-         dispatcher.register(spellGuideCommand("g"));
          dispatcher.register(voicemageCommand());
       });
    }
@@ -122,9 +118,6 @@ public final class VoicemageCommands {
       root.then(chantCommand());
       root.then(settingsCommand());
       root.then(spellGuideCommand("spells"));
-      root.then(spellGuideCommand("grimoire"));
-      root.then(spellGuideCommand("grimwore"));
-      root.then(spellGuideCommand("g"));
       return root;
    }
 

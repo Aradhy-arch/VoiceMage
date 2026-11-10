@@ -15,6 +15,7 @@ import com.voicemage.network.SaveSettingsPayload;
 import com.voicemage.network.SpellVisualPayload;
 import com.voicemage.network.UpdateSpellCostPayload;
 import com.voicemage.spell.Spell;
+import com.voicemage.spell.custom.CustomSpellCompiler;
 import java.util.Locale;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -97,20 +98,23 @@ public final class VoicemageNetworking {
             }
             float mana = Math.max(0.0F, Math.min(100.0F, payload.manaCost()));
             float power = Math.max(0.0F, payload.damageOrEffect());
+            String javaCode = payload.javaCode() != null ? payload.javaCode() : "";
 
             VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpell(phrase);
             if (existing != null) {
                existing.particleName = particleName;
                existing.manaCost = mana;
                existing.damageOrEffect = power;
+               existing.javaCode = javaCode;
             } else {
                VoicemageConfig.INSTANCE.customSpells.add(
-                  new VoicemageConfig.CustomSpellEntry(phrase, particleName, mana, power)
+                  new VoicemageConfig.CustomSpellEntry(phrase, particleName, mana, power, javaCode)
                );
             }
+            CustomSpellCompiler.clearCache();
             VoicemageConfig.save();
             VoicemageNetworking.broadcastSettings(context.server());
-            Voicemage.LOGGER.info("Server saved custom spell '{}' (particle: {}, mana: {}, power: {})", phrase, particleName, mana, power);
+            Voicemage.LOGGER.info("Server saved custom spell '{}' (particle: {}, mana: {}, power: {}, hasCode: {})", phrase, particleName, mana, power, !javaCode.isBlank());
          })
       );
       ServerPlayNetworking.registerGlobalReceiver(
@@ -123,6 +127,7 @@ public final class VoicemageNetworking {
                entry -> entry.phrase != null && VoicemageConfig.cleanPhrase(entry.phrase).equalsIgnoreCase(phrase)
             );
             if (removed) {
+               CustomSpellCompiler.clearCache();
                VoicemageConfig.save();
                VoicemageNetworking.broadcastSettings(context.server());
                Voicemage.LOGGER.info("Server deleted custom spell '{}'", phrase);

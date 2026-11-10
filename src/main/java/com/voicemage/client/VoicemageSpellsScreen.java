@@ -50,7 +50,11 @@ public final class VoicemageSpellsScreen extends Screen {
          this.custom = custom;
          this.name = custom.phrase;
          this.phrase = custom.phrase;
-         this.description = "Custom particle: " + custom.particleName + " | Power: " + custom.damageOrEffect;
+         if (custom.javaCode != null && !custom.javaCode.isBlank()) {
+            this.description = "Custom Java spell | " + custom.particleName;
+         } else {
+            this.description = "Custom particle: " + custom.particleName + " | Power: " + custom.damageOrEffect;
+         }
          this.category = Category.CUSTOM;
       }
 

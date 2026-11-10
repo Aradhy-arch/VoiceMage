@@ -88,18 +88,24 @@ public final class VoicemageConfig {
 
    public static class CustomSpellEntry {
       public String phrase = "";
-      public String particleName = "";
+      public String particleName = "minecraft:witch";
       public float manaCost = 20.0F;
       public float damageOrEffect = 5.0F;
+      public String javaCode = "";
 
       public CustomSpellEntry() {
       }
 
       public CustomSpellEntry(String phrase, String particleName, float manaCost, float damageOrEffect) {
+         this(phrase, particleName, manaCost, damageOrEffect, "");
+      }
+
+      public CustomSpellEntry(String phrase, String particleName, float manaCost, float damageOrEffect, String javaCode) {
          this.phrase = phrase;
-         this.particleName = particleName;
+         this.particleName = particleName != null && !particleName.isBlank() ? particleName : "minecraft:witch";
          this.manaCost = manaCost;
          this.damageOrEffect = damageOrEffect;
+         this.javaCode = javaCode != null ? javaCode : "";
       }
    }
 
@@ -441,8 +447,11 @@ public final class VoicemageConfig {
             if (entry.phrase == null) {
                entry.phrase = "";
             }
-            if (entry.particleName == null) {
-               entry.particleName = "";
+            if (entry.particleName == null || entry.particleName.isBlank()) {
+               entry.particleName = "minecraft:witch";
+            }
+            if (entry.javaCode == null) {
+               entry.javaCode = "";
             }
             entry.manaCost = clamp(entry.manaCost, 0.0F, 100.0F);
             entry.damageOrEffect = Math.max(0.0F, entry.damageOrEffect);

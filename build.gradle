@@ -26,6 +26,12 @@ dependencies {
 	include("com.alphacephei:vosk:${project.vosk_version}") {
 		transitive = false
 	}
+
+	// In-memory dynamic Java compiler for custom spells (zero-download)
+	implementation "org.codehaus.janino:janino:3.1.12"
+	include "org.codehaus.janino:janino:3.1.12"
+	implementation "org.codehaus.janino:commons-compiler:3.1.12"
+	include "org.codehaus.janino:commons-compiler:3.1.12"
 }
 
 // The speech model is bundled into the mod jar, so players never have to download anything.

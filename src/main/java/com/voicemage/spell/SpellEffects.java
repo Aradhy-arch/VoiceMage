@@ -5,6 +5,8 @@ import com.voicemage.Voicemage;
 import com.voicemage.config.VoicemageConfig;
 import com.voicemage.mixin.MannequinAccessor;
 import com.voicemage.network.FallingSpellPayload;
+import com.voicemage.spell.custom.CustomSpellCompiler;
+import com.voicemage.spell.custom.SpellContext;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -1134,6 +1136,16 @@ final class SpellEffects {
          if (!(living instanceof Player targetPlayer && !player.canHarmPlayer(targetPlayer))) {
             target = living;
          }
+      }
+
+      // Dynamic Java Custom Spell execution
+      if (custom.javaCode != null && !custom.javaCode.isBlank()) {
+         SpellContext ctx = new SpellContext(player, level, target, targetPos);
+         boolean ok = CustomSpellCompiler.execute(custom.javaCode, ctx);
+         if (ok) {
+            player.sendSystemMessage(Component.literal("§a✨ Cast " + custom.phrase.toUpperCase(Locale.ROOT) + "!"));
+         }
+         return ok;
       }
 
       if (target != null && custom.damageOrEffect > 0.0F) {

@@ -145,9 +145,10 @@ public class SpellContext {
       List<LivingEntity> entities = this.getNearbyLiving(radius);
       for (LivingEntity e : entities) {
          e.setDeltaMovement(e.getDeltaMovement().x, 0.45, e.getDeltaMovement().z);
-         e.setYRot(e.getYRot() + 90.0F);
-         e.setYHeadRot(e.getYHeadRot() + 90.0F);
-         e.setYBodyRot(e.getYBodyRot() + 90.0F);
+         float rot = e.getYRot() + 90.0F;
+         e.setYRot(rot);
+         e.setYHeadRot(rot);
+         e.setYBodyRot(rot);
          e.hurtMarked = true;
          this.level.sendParticles(ParticleTypes.NOTE, e.getX(), e.getY() + 1.2, e.getZ(), 6, 0.4, 0.4, 0.4, 0.5);
       }
@@ -238,7 +239,7 @@ public class SpellContext {
          holder = BuiltInRegistries.SOUND_EVENT.get(id).orElse(null);
       }
       BlockPos pos = this.targetPos != null ? BlockPos.containing(this.targetPos) : this.player.blockPosition();
-      SoundEvent sound = holder != null ? holder.value() : (SoundEvent)SoundEvents.ILLUSIONER_CAST_SPELL.value();
+      SoundEvent sound = holder != null ? holder.value() : SoundEvents.ILLUSIONER_CAST_SPELL;
       this.level.playSound(null, pos, sound, SoundSource.PLAYERS, volume, pitch);
    }
 

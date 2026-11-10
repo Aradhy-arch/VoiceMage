@@ -284,7 +284,12 @@ public final class VoicemageSettingsScreen extends Screen {
          210,
          58,
          Component.literal("// Type Java code or click a preset..."),
-         Component.literal("Java Spell Script")
+         Component.literal("Java Spell Script"),
+         0xFFE0E0E0,
+         true,
+         0xFFFFFFFF,
+         true,
+         true
       );
       this.codeBox.setCharacterLimit(8192);
       if (this.selectedCustomSpell != null) {

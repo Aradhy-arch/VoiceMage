@@ -22,10 +22,7 @@ jobs:
       - name: Build and inspect
         run: |
           ./gradlew compileJava || true
-          for j in $(find ~/.gradle/caches/fabric-loom -name "*.jar"); do
-            echo "Checking $j"
-            javap -cp "$j" net.minecraft.client.gui.components.MultiLineEditBox 2>/dev/null && break || true
-          done
+          javap -cp /home/runner/.gradle/caches/fabric-loom/26.2/minecraft-merged.jar 'net.minecraft.client.gui.components.MultiLineEditBox$Builder' || true
           ./gradlew build
       - uses: actions/upload-artifact@v4
         with:

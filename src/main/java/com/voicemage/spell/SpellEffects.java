@@ -70,7 +70,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
 
-final class SpellEffects {
+public final class SpellEffects {
    private static final Identifier SHRINK_MODIFIER = Identifier.fromNamespaceAndPath("voicemage", "shrink");
    private final Map<SpellEffects.TemporaryBlock, Long> temporaryBlocks = new HashMap<>();
    private final List<SpellEffects.FallingSpellTask> fallingSpells = new ArrayList<>();
@@ -86,6 +86,7 @@ final class SpellEffects {
    private final Map<UUID, Long> frozenUntil = new HashMap<>();
    private final Map<UUID, Long> flightUntil = new HashMap<>();
    private final Map<UUID, Long> flightCooldownUntil = new HashMap<>();
+   private final List<SpellEffects.ScheduledCustomSpellTask> scheduledTasks = new ArrayList<>();
 
    boolean cast(ServerPlayer player, Spell spell) {
       return switch (spell) {
@@ -120,6 +121,7 @@ final class SpellEffects {
       this.tickPolymorphs();
       this.tickShrinks();
       this.tickFlight(server);
+      this.tickScheduledTasks(server);
    }
 
    void restoreAll(MinecraftServer server) {
@@ -152,6 +154,7 @@ final class SpellEffects {
       this.impactVisuals.clear();
       this.healingVisuals.clear();
       this.craters.clear();
+      this.scheduledTasks.clear();
       TemporaryEntities.clear();
       this.frozenUntil.clear();
       this.journalDirty = false;
@@ -1126,6 +1129,24 @@ final class SpellEffects {
    }
    boolean castCustom(ServerPlayer player, VoicemageConfig.CustomSpellEntry custom) {
       ServerLevel level = player.level();
+      if (custom.tickDelay > 0) {
+         level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 1.0F, 1.2F);
+         level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY() + 1.0, player.getZ(), 20, 0.4, 0.6, 0.4, 0.1);
+         player.sendSystemMessage(Component.literal("§e⏳ Casting " + custom.phrase.toUpperCase(Locale.ROOT) + " (" + String.format(Locale.ROOT, "%.1f", custom.tickDelay / 20.0) + "s)..."));
+
+         this.schedule(level, player, custom.tickDelay, () -> {
+            if (player.isAlive() && !player.isSpectator()) {
+               this.executeCustomSpellDirectly(player, custom);
+            }
+         }, "custom spell delay: " + custom.phrase);
+         return true;
+      }
+
+      return this.executeCustomSpellDirectly(player, custom);
+   }
+
+   private boolean executeCustomSpellDirectly(ServerPlayer player, VoicemageConfig.CustomSpellEntry custom) {
+      ServerLevel level = player.level();
       double range = VoicemageConfig.INSTANCE.skillShotRange;
       HitResult hit = aimedHit(player, range, true);
       Vec3 start = player.getEyePosition();
@@ -1140,7 +1161,7 @@ final class SpellEffects {
 
       // Dynamic Java Custom Spell execution
       if (custom.javaCode != null && !custom.javaCode.isBlank()) {
-         SpellContext ctx = new SpellContext(player, level, target, targetPos);
+         SpellContext ctx = new SpellContext(player, level, target, targetPos, this);
          boolean ok = CustomSpellCompiler.execute(custom.javaCode, ctx);
          if (ok) {
             player.sendSystemMessage(Component.literal("§a✨ Cast " + custom.phrase.toUpperCase(Locale.ROOT) + "!"));
@@ -1175,6 +1196,65 @@ final class SpellEffects {
 
       player.sendSystemMessage(Component.literal("§a✨ Cast " + custom.phrase.toUpperCase(Locale.ROOT) + "!"));
       return true;
+   }
+
+   public void schedule(ServerLevel level, ServerPlayer player, int delayTicks, Runnable action, String description) {
+      if (delayTicks <= 0) {
+         try {
+            action.run();
+         } catch (Throwable t) {
+            Voicemage.LOGGER.error("Immediate spell execution error: " + t.getMessage(), t);
+         }
+         return;
+      }
+      long executeAt = level.getGameTime() + delayTicks;
+      this.scheduledTasks.add(new SpellEffects.ScheduledCustomSpellTask(level, player, executeAt, action, description));
+   }
+
+   private void tickScheduledTasks(MinecraftServer server) {
+      if (this.scheduledTasks.isEmpty()) {
+         return;
+      }
+      List<SpellEffects.ScheduledCustomSpellTask> ready = new ArrayList<>();
+      Iterator<SpellEffects.ScheduledCustomSpellTask> iterator = this.scheduledTasks.iterator();
+      while (iterator.hasNext()) {
+         SpellEffects.ScheduledCustomSpellTask task = iterator.next();
+         if (task.level.getGameTime() >= task.executeAtTick) {
+            iterator.remove();
+            ready.add(task);
+         }
+      }
+      for (SpellEffects.ScheduledCustomSpellTask task : ready) {
+         try {
+            task.action.run();
+         } catch (Throwable t) {
+            Throwable cause = t;
+            while (cause.getCause() != null) {
+               cause = cause.getCause();
+            }
+            String msg = cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName();
+            if (task.player != null && task.player.isAlive()) {
+               task.player.sendSystemMessage(Component.literal("§c[Spell Stage Error] " + msg));
+            }
+            Voicemage.LOGGER.error("Scheduled spell task error: " + msg, t);
+         }
+      }
+   }
+
+   public static final class ScheduledCustomSpellTask {
+      public final ServerLevel level;
+      public final ServerPlayer player;
+      public final long executeAtTick;
+      public final Runnable action;
+      public final String description;
+
+      public ScheduledCustomSpellTask(ServerLevel level, ServerPlayer player, long executeAtTick, Runnable action, String description) {
+         this.level = level;
+         this.player = player;
+         this.executeAtTick = executeAtTick;
+         this.action = action;
+         this.description = description;
+      }
    }
    void playerLeft(ServerPlayer player) {
       Long expires = this.flightUntil.remove(player.getUUID());

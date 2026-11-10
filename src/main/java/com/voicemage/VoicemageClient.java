@@ -154,6 +154,15 @@ public final class VoicemageClient implements ClientModInitializer {
                   feedbackTicks = 35;
                   triggerCustomSpellClientVisual(client, custom);
                   ClientPlayNetworking.send(new CastCustomSpellPayload(custom.phrase));
+               } else {
+                  VoicemageConfig.CustomSpellEntry chantSpell = VoicemageConfig.INSTANCE.findCustomSpellByPhrase(transcript);
+                  if (chantSpell != null && chantSpell.chantRequired && !chantSpell.chant.isBlank()) {
+                     feedback = "Chant: " + chantSpell.phrase;
+                     feedbackTicks = 50;
+                     if (client.player != null) {
+                        client.player.sendSystemMessage(Component.literal("§e[" + chantSpell.phrase.toUpperCase(java.util.Locale.ROOT) + "] Requires chant: §f\"" + chantSpell.chant + "\""));
+                     }
+                  }
                }
             }
          }

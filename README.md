@@ -201,6 +201,47 @@ User scripts are executed as Java method bodies with an injected `SpellContext c
 | **Sounds & Chat** | `ctx.playSound("block.note_block.bell", vol, pitch)` | Plays any Minecraft sound |
 | | `ctx.message("§dText")` | Sends chat message to caster |
 | | `ctx.runCommand("/weather clear")` | Executes a server command |
+| **Multi-Stage & Delay** | `ctx.schedule(delayTicks, Runnable)` | Schedules timed multi-stage phases (20 ticks = 1s) |
+| | `ctx.delay(delayTicks, Runnable)` | Alias for `schedule` |
+
+### 🎙️ Custom Chants & Multi-Stage Spells
+
+Custom spells now support **Incantation Chants** and **Multi-Stage Delays**:
+1. **Chant Requirement (`[Chant: ON/OFF]`)**:
+   - Toggle chant mode for any custom spell and enter your incantation (e.g., *"celestial skies awaken and destroy celestial blast"*).
+   - The phrase and full chant are dynamically loaded into the offline Vosk speech recognition grammar.
+   - If a player speaks only the spell phrase, the HUD and chat provide a reminder: `Requires chant: "..."`.
+2. **Initial Tick Delay**: Set an optional cast warmup delay in ticks (e.g. `20` = 1s). The caster hears arcane enchanting sounds and sees a casting countdown.
+3. **Multi-Stage Java Scripts (`ctx.schedule`)**: Create cinematic multi-phase spells with timed aftermaths! Click the **`[⏳Stages]`** preset in the menu to load the *Celestial Blast* example:
+```java
+// Stage 1: Arcane beam and charge sound
+ctx.beam("portal, soul_fire_flame");
+ctx.playSound("block.beacon.activate", 1.0F, 0.5F);
+ctx.message("§eStage 1: Charging celestial power...");
+
+// Stage 2: Vortex pull after 1s (20 ticks)
+ctx.schedule(20, () -> {
+   Vec3 center = ctx.getTargetPos();
+   ctx.burst("reverse_portal", center, 35);
+   for (LivingEntity e : ctx.getNearbyLiving(8.0)) {
+      ctx.pull(e, 1.2);
+   }
+   ctx.playSound("entity.warden.sonic_boom", 1.0F, 1.2F);
+   ctx.message("§dStage 2: Gravitational pull!");
+});
+
+// Stage 3: Detonation after 2s (40 ticks)
+ctx.schedule(40, () -> {
+   Vec3 center = ctx.getTargetPos();
+   ctx.strikeLightning(center);
+   for (LivingEntity e : ctx.getNearbyLiving(8.0)) {
+      ctx.damage(e, 16.0F);
+   }
+   ctx.burst("flame, explosion", center, 50);
+   ctx.playSound("entity.generic.explode", 1.5F, 0.8F);
+   ctx.message("§cStage 3: Detonation!");
+});
+```
 
 ### AI Custom Spell Prompt (Gemini & Claude)
 

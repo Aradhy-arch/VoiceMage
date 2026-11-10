@@ -92,20 +92,30 @@ public final class VoicemageConfig {
       public float manaCost = 20.0F;
       public float damageOrEffect = 5.0F;
       public String javaCode = "";
+      public boolean chantRequired = false;
+      public String chant = "";
+      public int tickDelay = 0;
 
       public CustomSpellEntry() {
       }
 
       public CustomSpellEntry(String phrase, String particleName, float manaCost, float damageOrEffect) {
-         this(phrase, particleName, manaCost, damageOrEffect, "");
+         this(phrase, particleName, manaCost, damageOrEffect, "", false, "", 0);
       }
 
       public CustomSpellEntry(String phrase, String particleName, float manaCost, float damageOrEffect, String javaCode) {
-         this.phrase = phrase;
+         this(phrase, particleName, manaCost, damageOrEffect, javaCode, false, "", 0);
+      }
+
+      public CustomSpellEntry(String phrase, String particleName, float manaCost, float damageOrEffect, String javaCode, boolean chantRequired, String chant, int tickDelay) {
+         this.phrase = phrase != null ? phrase : "";
          this.particleName = particleName != null && !particleName.isBlank() ? particleName : "minecraft:witch";
          this.manaCost = manaCost;
          this.damageOrEffect = damageOrEffect;
          this.javaCode = javaCode != null ? javaCode : "";
+         this.chantRequired = chantRequired;
+         this.chant = chant != null ? chant : "";
+         this.tickDelay = Math.max(0, Math.min(1200, tickDelay));
       }
    }
 
@@ -326,6 +336,22 @@ public final class VoicemageConfig {
       return clean.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " ");
    }
 
+   public CustomSpellEntry findCustomSpellByPhrase(String phrase) {
+      if (phrase == null || phrase.isBlank() || this.customSpells == null) {
+         return null;
+      }
+      String normalized = cleanPhrase(phrase);
+      if (normalized.isBlank()) {
+         return null;
+      }
+      for (CustomSpellEntry entry : this.customSpells) {
+         if (entry.phrase != null && cleanPhrase(entry.phrase).equals(normalized)) {
+            return entry;
+         }
+      }
+      return null;
+   }
+
    public CustomSpellEntry findCustomSpell(String text) {
       if (text == null || text.isBlank() || this.customSpells == null) {
          return null;
@@ -335,25 +361,46 @@ public final class VoicemageConfig {
          return null;
       }
 
-      // 1. Exact match
+      // 1. Exact match on chant (for spells requiring chant)
       for (CustomSpellEntry entry : this.customSpells) {
-         if (entry.phrase != null) {
-            String entryNorm = cleanPhrase(entry.phrase);
-            if (entryNorm.equals(normalized)) {
+         if (entry.chantRequired && entry.chant != null && !entry.chant.isBlank()) {
+            if (cleanPhrase(entry.chant).equals(normalized)) {
                return entry;
             }
          }
       }
 
-      // 2. Substring match
+      // 2. Exact match on phrase (for spells without chant requirement)
       for (CustomSpellEntry entry : this.customSpells) {
-         if (entry.phrase != null) {
-            String entryNorm = cleanPhrase(entry.phrase);
-            if (!entryNorm.isBlank() && (normalized.contains(entryNorm) || (normalized.length() >= 4 && entryNorm.contains(normalized)))) {
+         if (!entry.chantRequired || entry.chant == null || entry.chant.isBlank()) {
+            if (entry.phrase != null && cleanPhrase(entry.phrase).equals(normalized)) {
                return entry;
             }
          }
       }
+
+      // 3. Substring match on chant
+      for (CustomSpellEntry entry : this.customSpells) {
+         if (entry.chantRequired && entry.chant != null && !entry.chant.isBlank()) {
+            String chantNorm = cleanPhrase(entry.chant);
+            if (!chantNorm.isBlank() && (normalized.contains(chantNorm) || (normalized.length() >= 6 && chantNorm.contains(normalized)))) {
+               return entry;
+            }
+         }
+      }
+
+      // 4. Substring match on phrase (for non-chant-required spells)
+      for (CustomSpellEntry entry : this.customSpells) {
+         if (!entry.chantRequired || entry.chant == null || entry.chant.isBlank()) {
+            if (entry.phrase != null) {
+               String entryNorm = cleanPhrase(entry.phrase);
+               if (!entryNorm.isBlank() && (normalized.contains(entryNorm) || (normalized.length() >= 4 && entryNorm.contains(normalized)))) {
+                  return entry;
+               }
+            }
+         }
+      }
+
       return null;
    }
 
@@ -453,6 +500,10 @@ public final class VoicemageConfig {
             if (entry.javaCode == null) {
                entry.javaCode = "";
             }
+            if (entry.chant == null) {
+               entry.chant = "";
+            }
+            entry.tickDelay = clamp(entry.tickDelay, 0, 1200);
             entry.manaCost = clamp(entry.manaCost, 0.0F, 100.0F);
             entry.damageOrEffect = Math.max(0.0F, entry.damageOrEffect);
          }

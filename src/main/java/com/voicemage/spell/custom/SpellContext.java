@@ -1,6 +1,7 @@
 package com.voicemage.spell.custom;
 
 import com.voicemage.config.VoicemageConfig;
+import com.voicemage.spell.SpellEffects;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -36,12 +37,18 @@ public class SpellContext {
    public final ServerLevel level;
    public final LivingEntity targetEntity;
    public final Vec3 targetPos;
+   private final SpellEffects effects;
 
-   public SpellContext(ServerPlayer player, ServerLevel level, LivingEntity targetEntity, Vec3 targetPos) {
+   public SpellContext(ServerPlayer player, ServerLevel level, LivingEntity targetEntity, Vec3 targetPos, SpellEffects effects) {
       this.player = player;
       this.level = level;
       this.targetEntity = targetEntity;
       this.targetPos = targetPos != null ? targetPos : player.getEyePosition().add(player.getLookAngle().scale(10.0));
+      this.effects = effects;
+   }
+
+   public SpellContext(ServerPlayer player, ServerLevel level, LivingEntity targetEntity, Vec3 targetPos) {
+      this(player, level, targetEntity, targetPos, null);
    }
 
    public ServerPlayer getPlayer() {
@@ -269,6 +276,27 @@ public class SpellContext {
       } catch (Exception e) {
          this.message("§cCommand execution failed: " + e.getMessage());
       }
+   }
+
+   /**
+    * Schedules an action to execute after a tick delay (20 ticks = 1 second).
+    * Enables creating multi-stage spells with timed phases and effects!
+    * E.g. ctx.schedule(20, () -> { ctx.strikeLightning(ctx.getTargetPos()); });
+    */
+   public void schedule(int delayTicks, Runnable action) {
+      if (action == null) return;
+      if (this.effects != null) {
+         this.effects.schedule(this.level, this.player, Math.max(0, delayTicks), action, "custom stage");
+      } else {
+         action.run();
+      }
+   }
+
+   /**
+    * Alias for schedule(delayTicks, action).
+    */
+   public void delay(int delayTicks, Runnable action) {
+      this.schedule(delayTicks, action);
    }
 
    private static List<ParticleOptions> parseParticleList(String particles) {

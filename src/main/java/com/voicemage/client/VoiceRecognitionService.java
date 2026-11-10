@@ -49,10 +49,15 @@ public final class VoiceRecognitionService {
       if (VoicemageConfig.INSTANCE.customSpells != null) {
          for (VoicemageConfig.CustomSpellEntry custom : VoicemageConfig.INSTANCE.customSpells) {
             if (custom.phrase != null && !custom.phrase.isBlank()) {
-               String phrase = custom.phrase.toLowerCase(Locale.ROOT)
-                  .replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " ");
+               String phrase = VoicemageConfig.cleanPhrase(custom.phrase);
                if (!phrase.isBlank() && !phrases.contains(phrase)) {
                   phrases.add(phrase);
+               }
+            }
+            if (custom.chant != null && !custom.chant.isBlank()) {
+               String chant = VoicemageConfig.cleanPhrase(custom.chant);
+               if (!chant.isBlank() && !phrases.contains(chant)) {
+                  phrases.add(chant);
                }
             }
          }

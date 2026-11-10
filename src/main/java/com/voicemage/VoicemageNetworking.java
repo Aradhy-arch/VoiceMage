@@ -99,22 +99,28 @@ public final class VoicemageNetworking {
             float mana = Math.max(0.0F, Math.min(100.0F, payload.manaCost()));
             float power = Math.max(0.0F, payload.damageOrEffect());
             String javaCode = payload.javaCode() != null ? payload.javaCode() : "";
+            boolean chantRequired = payload.chantRequired();
+            String chant = payload.chant() != null ? payload.chant().trim() : "";
+            int tickDelay = Math.max(0, Math.min(1200, payload.tickDelay()));
 
-            VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpell(phrase);
+            VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpellByPhrase(phrase);
             if (existing != null) {
                existing.particleName = particleName;
                existing.manaCost = mana;
                existing.damageOrEffect = power;
                existing.javaCode = javaCode;
+               existing.chantRequired = chantRequired;
+               existing.chant = chant;
+               existing.tickDelay = tickDelay;
             } else {
                VoicemageConfig.INSTANCE.customSpells.add(
-                  new VoicemageConfig.CustomSpellEntry(phrase, particleName, mana, power, javaCode)
+                  new VoicemageConfig.CustomSpellEntry(phrase, particleName, mana, power, javaCode, chantRequired, chant, tickDelay)
                );
             }
             CustomSpellCompiler.clearCache();
             VoicemageConfig.save();
             VoicemageNetworking.broadcastSettings(context.server());
-            Voicemage.LOGGER.info("Server saved custom spell '{}' (particle: {}, mana: {}, power: {}, hasCode: {})", phrase, particleName, mana, power, !javaCode.isBlank());
+            Voicemage.LOGGER.info("Server saved custom spell '{}' (particle: {}, mana: {}, power: {}, hasCode: {}, chantRequired: {}, delay: {})", phrase, particleName, mana, power, !javaCode.isBlank(), chantRequired, tickDelay);
          })
       );
       ServerPlayNetworking.registerGlobalReceiver(

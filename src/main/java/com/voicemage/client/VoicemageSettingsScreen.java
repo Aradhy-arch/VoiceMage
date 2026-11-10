@@ -53,6 +53,10 @@ public final class VoicemageSettingsScreen extends Screen {
    // Tab 2: Custom Spells
    private EditBox phraseBox;
    private EditBox customManaBox;
+   private EditBox customDelayBox;
+   private Button chantToggleBtn;
+   private EditBox chantBox;
+   private boolean customChantRequired = false;
    private MultiLineEditBox codeBox;
    private int customPage = 0;
    private VoicemageConfig.CustomSpellEntry selectedCustomSpell;
@@ -219,90 +223,129 @@ public final class VoicemageSettingsScreen extends Screen {
       int leftX = boxX + 14;
       int rightX = boxX + 236;
 
-      // Phrase & Mana input row
-      this.phraseBox = new EditBox(this.font, leftX, contentY + 10, 160, 16, Component.literal("Spell Phrase"));
+      // Row 1: Phrase, Mana, Delay
+      this.phraseBox = new EditBox(this.font, leftX, contentY + 8, 108, 15, Component.literal("Spell Phrase"));
       this.phraseBox.setMaxLength(64);
       if (this.selectedCustomSpell != null) {
          this.phraseBox.setValue(this.selectedCustomSpell.phrase);
       }
       this.addRenderableWidget(this.phraseBox);
 
-      this.customManaBox = new EditBox(this.font, leftX + 166, contentY + 10, 44, 16, Component.literal("Mana"));
+      this.customManaBox = new EditBox(this.font, leftX + 112, contentY + 8, 44, 15, Component.literal("Mana"));
       this.customManaBox.setMaxLength(5);
       this.customManaBox.setValue(this.selectedCustomSpell != null ? String.valueOf((int)this.selectedCustomSpell.manaCost) : "20");
       this.addRenderableWidget(this.customManaBox);
 
-      // Preset buttons row
-      int presetY = contentY + 30;
+      this.customDelayBox = new EditBox(this.font, leftX + 160, contentY + 8, 50, 15, Component.literal("Delay"));
+      this.customDelayBox.setMaxLength(5);
+      this.customDelayBox.setValue(this.selectedCustomSpell != null ? String.valueOf(this.selectedCustomSpell.tickDelay) : "0");
+      this.addRenderableWidget(this.customDelayBox);
+
+      // Row 2: Chant Toggle & Chant input
+      this.customChantRequired = this.selectedCustomSpell != null && this.selectedCustomSpell.chantRequired;
+      this.chantToggleBtn = Button.builder(Component.literal(this.customChantRequired ? "§aChant: ON" : "§7Chant: OFF"), btn -> {
+         this.customChantRequired = !this.customChantRequired;
+         btn.setMessage(Component.literal(this.customChantRequired ? "§aChant: ON" : "§7Chant: OFF"));
+         this.statusMessage = "Chant requirement " + (this.customChantRequired ? "§aENABLED" : "§cDISABLED");
+         this.statusColor = 0xFFAAAAAA;
+      }).bounds(leftX, contentY + 26, 68, 15).build();
+      this.addRenderableWidget(this.chantToggleBtn);
+
+      this.chantBox = new EditBox(this.font, leftX + 72, contentY + 26, 138, 15, Component.literal("Chant Text"));
+      this.chantBox.setMaxLength(256);
+      if (this.selectedCustomSpell != null && this.selectedCustomSpell.chant != null) {
+         this.chantBox.setValue(this.selectedCustomSpell.chant);
+      }
+      this.addRenderableWidget(this.chantBox);
+
+      // Row 3: Preset buttons row
+      int presetY = contentY + 44;
       this.addRenderableWidget(
-         Button.builder(Component.literal("🕺 Dance"), btn -> {
+         Button.builder(Component.literal("🕺Dance"), btn -> {
             this.phraseBox.setValue("dance party");
             this.customManaBox.setValue("25");
+            this.customDelayBox.setValue("0");
             this.codeBox.setValue("for (LivingEntity e : ctx.getNearbyLiving(10.0)) {\n   e.setDeltaMovement(0, 0.45, 0);\n   e.setYRot(e.getYRot() + 90.0F);\n   ctx.spawnParticle(\"note\", e.getX(), e.getY() + 1.2, e.getZ(), 5);\n}\nctx.playSound(\"block.note_block.bell\", 1.0F, 1.5F);\nctx.message(\"§d🕺 Dance party!\");");
             this.statusMessage = "Loaded preset: 🕺 Dance Party";
             this.statusColor = 0xFFAAAAAA;
-         }).bounds(leftX, presetY, 48, 14).build()
+         }).bounds(leftX, presetY, 35, 14).build()
       );
       this.addRenderableWidget(
-         Button.builder(Component.literal("✨ Beam"), btn -> {
+         Button.builder(Component.literal("✨Beam"), btn -> {
             this.phraseBox.setValue("triple beam");
             this.customManaBox.setValue("30");
+            this.customDelayBox.setValue("0");
             this.codeBox.setValue("ctx.beam(\"flame, soul_fire_flame, sonic_boom\");\nctx.burst(\"flame, sonic_boom\", ctx.getTargetPos(), 30);\nif (ctx.getTargetEntity() != null) {\n   ctx.damage(ctx.getTargetEntity(), 12.0F);\n}\nctx.playSound(\"entity.warden.sonic_boom\", 1.5F, 1.2F);");
             this.statusMessage = "Loaded preset: ✨ Triple Beam";
             this.statusColor = 0xFFAAAAAA;
-         }).bounds(leftX + 50, presetY, 46, 14).build()
+         }).bounds(leftX + 37, presetY, 35, 14).build()
       );
       this.addRenderableWidget(
-         Button.builder(Component.literal("🌪 Vortex"), btn -> {
+         Button.builder(Component.literal("🌪Vortex"), btn -> {
             this.phraseBox.setValue("vortex");
             this.customManaBox.setValue("35");
+            this.customDelayBox.setValue("0");
             this.codeBox.setValue("Vec3 center = ctx.getTargetPos();\nctx.burst(\"cloud, portal, reverse_portal\", center, 50);\nfor (LivingEntity e : ctx.getNearbyLiving(8.0)) {\n   ctx.pull(e, 0.8);\n   ctx.damage(e, 4.0F);\n}\nctx.playSound(\"entity.wind_charge.wind_burst\", 1.5F, 0.7F);");
             this.statusMessage = "Loaded preset: 🌪 Vortex";
             this.statusColor = 0xFFAAAAAA;
-         }).bounds(leftX + 98, presetY, 46, 14).build()
+         }).bounds(leftX + 74, presetY, 35, 14).build()
       );
       this.addRenderableWidget(
-         Button.builder(Component.literal("⚡ Zap"), btn -> {
+         Button.builder(Component.literal("⚡Zap"), btn -> {
             this.phraseBox.setValue("chain zap");
             this.customManaBox.setValue("40");
+            this.customDelayBox.setValue("0");
             this.codeBox.setValue("ctx.strikeLightning(ctx.getTargetPos());\nfor (LivingEntity e : ctx.getNearbyLiving(6.0)) {\n   ctx.damage(e, 10.0F);\n}\nctx.playSound(\"entity.lightning_bolt.thunder\", 1.2F, 1.0F);");
             this.statusMessage = "Loaded preset: ⚡ Chain Zap";
             this.statusColor = 0xFFAAAAAA;
-         }).bounds(leftX + 146, presetY, 32, 14).build()
+         }).bounds(leftX + 111, presetY, 25, 14).build()
       );
       this.addRenderableWidget(
-         Button.builder(Component.literal("📋 AI"), btn -> this.copyAiPrompt())
-            .bounds(leftX + 180, presetY, 30, 14).build()
+         Button.builder(Component.literal("⏳Stages"), btn -> {
+            this.phraseBox.setValue("celestial blast");
+            this.customManaBox.setValue("45");
+            this.customDelayBox.setValue("0");
+            this.customChantRequired = true;
+            this.chantToggleBtn.setMessage(Component.literal("§aChant: ON"));
+            this.chantBox.setValue("celestial skies awaken and destroy celestial blast");
+            this.codeBox.setValue("// Stage 1: Arcane beam and charge sound\nctx.beam(\"portal, soul_fire_flame\");\nctx.playSound(\"block.beacon.activate\", 1.0F, 0.5F);\nctx.message(\"§eStage 1: Charging celestial power...\");\n\n// Stage 2: Vortex pull after 1s (20 ticks)\nctx.schedule(20, () -> {\n   Vec3 center = ctx.getTargetPos();\n   ctx.burst(\"reverse_portal\", center, 35);\n   for (LivingEntity e : ctx.getNearbyLiving(8.0)) {\n      ctx.pull(e, 1.2);\n   }\n   ctx.playSound(\"entity.warden.sonic_boom\", 1.0F, 1.2F);\n   ctx.message(\"§dStage 2: Gravitational pull!\");\n});\n\n// Stage 3: Detonation after 2s (40 ticks)\nctx.schedule(40, () -> {\n   Vec3 center = ctx.getTargetPos();\n   ctx.strikeLightning(center);\n   for (LivingEntity e : ctx.getNearbyLiving(8.0)) {\n      ctx.damage(e, 16.0F);\n   }\n   ctx.burst(\"flame, explosion\", center, 50);\n   ctx.playSound(\"entity.generic.explode\", 1.5F, 0.8F);\n   ctx.message(\"§cStage 3: Detonation!\");\n});");
+            this.statusMessage = "Loaded preset: ⏳ Multi-Stage";
+            this.statusColor = 0xFFAAAAAA;
+         }).bounds(leftX + 138, presetY, 45, 14).build()
+      );
+      this.addRenderableWidget(
+         Button.builder(Component.literal("📋AI"), btn -> this.copyAiPrompt())
+            .bounds(leftX + 185, presetY, 25, 14).build()
       );
 
-      // Java Code Editor
-      int codeY = contentY + 48;
+      // Row 4: Java Code Editor
+      int codeY = contentY + 62;
       this.codeBox = MultiLineEditBox.builder()
          .setX(leftX)
-         .setY(codeY + 10)
+         .setY(codeY)
          .setPlaceholder(Component.literal("// Type Java code or click a preset..."))
-         .build(this.font, 210, 58, Component.literal("Java Spell Script"));
+         .build(this.font, 210, 52, Component.literal("Java Spell Script"));
       this.codeBox.setCharacterLimit(8192);
       if (this.selectedCustomSpell != null) {
          this.codeBox.setValue(this.selectedCustomSpell.javaCode != null ? this.selectedCustomSpell.javaCode : "");
       }
       this.addRenderableWidget(this.codeBox);
 
-      // Action buttons row
-      int actY = codeY + 72;
+      // Row 5: Action buttons row
+      int actY = contentY + 118;
       this.addRenderableWidget(
          Button.builder(Component.literal("Test Compile"), btn -> this.testCompileCode())
-            .bounds(leftX, actY, 68, 18)
+            .bounds(leftX, actY, 68, 16)
             .build()
       );
       this.addRenderableWidget(
          Button.builder(Component.literal("§a+ Save Spell"), btn -> this.saveCustomSpell())
-            .bounds(leftX + 72, actY, 86, 18)
+            .bounds(leftX + 72, actY, 86, 16)
             .build()
       );
       this.addRenderableWidget(
          Button.builder(Component.literal("§cDelete"), btn -> this.deleteCustomSpell())
-            .bounds(leftX + 162, actY, 48, 18)
+            .bounds(leftX + 162, actY, 48, 16)
             .build()
       );
 
@@ -348,6 +391,16 @@ public final class VoicemageSettingsScreen extends Screen {
       this.selectedCustomSpell = entry;
       this.phraseBox.setValue(entry.phrase);
       this.customManaBox.setValue(String.valueOf((int)entry.manaCost));
+      if (this.customDelayBox != null) {
+         this.customDelayBox.setValue(String.valueOf(entry.tickDelay));
+      }
+      this.customChantRequired = entry.chantRequired;
+      if (this.chantToggleBtn != null) {
+         this.chantToggleBtn.setMessage(Component.literal(this.customChantRequired ? "§aChant: ON" : "§7Chant: OFF"));
+      }
+      if (this.chantBox != null) {
+         this.chantBox.setValue(entry.chant != null ? entry.chant : "");
+      }
       if (this.codeBox != null) {
          this.codeBox.setValue(entry.javaCode != null ? entry.javaCode : "");
       }
@@ -403,6 +456,8 @@ public final class VoicemageSettingsScreen extends Screen {
             - ctx.playSound(String soundId, float volume, float pitch)
             - ctx.message(String text) -> message caster
             - ctx.runCommand(String command) -> run server command
+            - ctx.schedule(int delayTicks, Runnable action) -> schedule multi-stage action (e.g. ctx.schedule(20, () -> { ctx.strikeLightning(ctx.getTargetPos()); }))
+            - ctx.delay(int delayTicks, Runnable action) -> alias for schedule
          4. Standard Minecraft packages are pre-imported: net.minecraft.world.entity.*, net.minecraft.server.level.*, net.minecraft.world.phys.*, net.minecraft.core.particles.*, net.minecraft.sounds.*, net.minecraft.world.effect.*, java.util.*, java.lang.Math.*.
 
          Create a spell that does: [DESCRIBE YOUR SPELL HERE]
@@ -436,6 +491,23 @@ public final class VoicemageSettingsScreen extends Screen {
          return;
       }
 
+      boolean chantReq = this.customChantRequired;
+      String chant = this.chantBox != null ? this.chantBox.getValue().trim() : "";
+      if (chantReq && chant.isBlank()) {
+         this.statusMessage = "Chant text cannot be blank when chant is ON!";
+         this.statusColor = 0xFFFF5555;
+         return;
+      }
+
+      int delay = 0;
+      if (this.customDelayBox != null) {
+         try {
+            delay = Integer.parseInt(this.customDelayBox.getValue().trim());
+         } catch (NumberFormatException ignored) {
+         }
+      }
+      delay = Math.max(0, Math.min(1200, delay));
+
       String javaCode = this.codeBox != null ? this.codeBox.getValue() : "";
       if (!javaCode.trim().isEmpty()) {
          String err = CustomSpellCompiler.validate(javaCode);
@@ -459,20 +531,23 @@ public final class VoicemageSettingsScreen extends Screen {
       String particleName = this.selectedCustomSpell != null ? this.selectedCustomSpell.particleName : "minecraft:witch";
       float power = this.selectedCustomSpell != null ? this.selectedCustomSpell.damageOrEffect : 5.0F;
 
-      VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpell(normalized);
+      VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpellByPhrase(normalized);
       if (existing != null) {
          existing.particleName = particleName;
          existing.manaCost = mana;
          existing.damageOrEffect = power;
          existing.javaCode = javaCode;
+         existing.chantRequired = chantReq;
+         existing.chant = chant;
+         existing.tickDelay = delay;
       } else {
          VoicemageConfig.INSTANCE.customSpells.add(
-            new VoicemageConfig.CustomSpellEntry(normalized, particleName, mana, power, javaCode)
+            new VoicemageConfig.CustomSpellEntry(normalized, particleName, mana, power, javaCode, chantReq, chant, delay)
          );
       }
 
       VoicemageConfig.save();
-      ClientPlayNetworking.send(new SaveCustomSpellPayload(normalized, particleName, mana, power, javaCode));
+      ClientPlayNetworking.send(new SaveCustomSpellPayload(normalized, particleName, mana, power, javaCode, chantReq, chant, delay));
       VoicemageClient.updateVoiceGrammar();
 
       this.statusMessage = "Saved custom spell \"" + normalized + "\"!";
@@ -656,10 +731,9 @@ public final class VoicemageSettingsScreen extends Screen {
       } else {
          int leftX = boxX + 14;
          int rightX = boxX + 236;
-         graphics.text(this.font, "Spell Phrase:", leftX, contentY, 0xFFDDDDDD, true);
-         graphics.text(this.font, "Mana:", leftX + 166, contentY, 0xFFDDDDDD, true);
-         graphics.text(this.font, "Presets / Helpers:", leftX, contentY + 20, 0xFFFFAA00, false);
-         graphics.text(this.font, "Java Code (Janino / ctx):", leftX, contentY + 46, 0xFFDDDDDD, true);
+         graphics.text(this.font, "Phrase:", leftX, contentY - 2, 0xFFDDDDDD, false);
+         graphics.text(this.font, "Mana:", leftX + 112, contentY - 2, 0xFFDDDDDD, false);
+         graphics.text(this.font, "Delay:", leftX + 160, contentY - 2, 0xFFDDDDDD, false);
 
          List<VoicemageConfig.CustomSpellEntry> spells = VoicemageConfig.INSTANCE.customSpells;
          int totalSpells = spells.size();
@@ -685,11 +759,13 @@ public final class VoicemageSettingsScreen extends Screen {
                   }
                   graphics.text(this.font, phraseText, rightX + 5, itemY + 3, 0xFF55FF55, true);
 
+                  String chantTag = entry.chantRequired ? "§e[Ch]§r " : "";
+                  String delayTag = entry.tickDelay > 0 ? " " + entry.tickDelay + "t" : "";
                   String details;
                   if (entry.javaCode != null && !entry.javaCode.isBlank()) {
-                     details = "§dJava Spell§r (M:" + (int)entry.manaCost + ")";
+                     details = chantTag + "§dJava§r " + (int)entry.manaCost + "m" + delayTag;
                   } else {
-                     details = "Legacy (M:" + (int)entry.manaCost + " P:" + entry.damageOrEffect + ")";
+                     details = chantTag + "Legacy " + (int)entry.manaCost + "m" + delayTag;
                   }
                   if (details.length() > 18) {
                      details = details.substring(0, 16) + "..";

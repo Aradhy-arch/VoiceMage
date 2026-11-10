@@ -322,30 +322,27 @@ public final class VoicemageSettingsScreen extends Screen {
    private void saveCustomSpell() {
       String phrase = this.phraseBox.getValue().trim();
       if (phrase.isBlank()) {
-         this.statusMessage = "Phrase cannot be blank!";
+         this.statusMessage = "Spell phrase cannot be blank!";
          this.statusColor = 0xFFFF5555;
          return;
       }
 
-      String normalized = phrase.toLowerCase(Locale.ROOT);
+      String normalized = VoicemageConfig.cleanPhrase(phrase);
+      if (normalized.isBlank()) {
+         this.statusMessage = "Spell phrase cannot be blank!";
+         this.statusColor = 0xFFFF5555;
+         return;
+      }
+
       if (Spell.byPhrase(normalized) != null) {
-         this.statusMessage = "Phrase belongs to a built-in spell!";
+         this.statusMessage = "Phrase is already a built-in spell!";
          this.statusColor = 0xFFFF5555;
          return;
       }
 
       String particleName = this.particleBox.getValue().trim();
       if (particleName.isBlank()) {
-         this.statusMessage = "Particle name cannot be blank!";
-         this.statusColor = 0xFFFF5555;
-         return;
-      }
-
-      ParticleType<?> particleType = VoicemageConfig.parseParticle(particleName);
-      if (particleType == null) {
-         this.statusMessage = "Invalid particle ID: \"" + particleName + "\"";
-         this.statusColor = 0xFFFF5555;
-         return;
+         particleName = "minecraft:witch";
       }
 
       float mana = 20.0F;
@@ -384,22 +381,23 @@ public final class VoicemageSettingsScreen extends Screen {
    }
 
    private void deleteCustomSpell() {
-      String phrase = this.phraseBox.getValue().trim().toLowerCase(Locale.ROOT);
+      String phrase = this.phraseBox.getValue().trim();
       if (phrase.isBlank()) {
          this.statusMessage = "Select or enter a phrase to delete!";
          this.statusColor = 0xFFFF5555;
          return;
       }
 
+      String normalized = VoicemageConfig.cleanPhrase(phrase);
       boolean removed = VoicemageConfig.INSTANCE.customSpells.removeIf(
-         entry -> entry.phrase != null && entry.phrase.trim().toLowerCase(Locale.ROOT).equals(phrase)
+         entry -> entry.phrase != null && VoicemageConfig.cleanPhrase(entry.phrase).equals(normalized)
       );
 
       if (removed) {
          VoicemageConfig.save();
-         ClientPlayNetworking.send(new DeleteCustomSpellPayload(phrase));
+         ClientPlayNetworking.send(new DeleteCustomSpellPayload(normalized));
          VoicemageClient.updateVoiceGrammar();
-         this.statusMessage = "Deleted spell \"" + phrase + "\"!";
+         this.statusMessage = "Deleted spell \"" + normalized + "\"!";
          this.statusColor = 0xFFFFFF55;
          this.phraseBox.setValue("");
          this.particleBox.setValue("");
@@ -408,7 +406,7 @@ public final class VoicemageSettingsScreen extends Screen {
          this.selectedCustomSpell = null;
          this.refresh();
       } else {
-         this.statusMessage = "No spell found with phrase \"" + phrase + "\"";
+         this.statusMessage = "No spell found matching \"" + normalized + "\"";
          this.statusColor = 0xFFFF5555;
       }
    }
@@ -482,6 +480,11 @@ public final class VoicemageSettingsScreen extends Screen {
          try {
             cfg.skillShotRange = Double.parseDouble(this.skillRangeBox.getValue().trim());
          } catch (NumberFormatException ignored) {
+         }
+      } else if (this.activeTab == TAB_CUSTOM && this.phraseBox != null) {
+         String phrase = this.phraseBox.getValue().trim();
+         if (!phrase.isBlank()) {
+            this.saveCustomSpell();
          }
       }
    }

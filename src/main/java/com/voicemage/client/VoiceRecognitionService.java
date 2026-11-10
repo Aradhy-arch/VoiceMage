@@ -49,8 +49,9 @@ public final class VoiceRecognitionService {
       if (VoicemageConfig.INSTANCE.customSpells != null) {
          for (VoicemageConfig.CustomSpellEntry custom : VoicemageConfig.INSTANCE.customSpells) {
             if (custom.phrase != null && !custom.phrase.isBlank()) {
-               String phrase = custom.phrase.toLowerCase(Locale.ROOT).trim();
-               if (!phrases.contains(phrase)) {
+               String phrase = custom.phrase.toLowerCase(Locale.ROOT)
+                  .replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " ");
+               if (!phrase.isBlank() && !phrases.contains(phrase)) {
                   phrases.add(phrase);
                }
             }
@@ -139,17 +140,15 @@ public final class VoiceRecognitionService {
 
          boolean chantRequired = this.explosionChantRequired;
 
-         try (Recognizer recognizer = new Recognizer(model, SAMPLE_RATE, grammar(chantRequired))) {
-            MicrophoneCapture capture = MicrophoneCapture.open(ClientSettings.microphone());
+         try (MicrophoneCapture capture = MicrophoneCapture.open(ClientSettings.microphone())) {
             if (!this.isCurrent(runId)) {
-               capture.close();
                return;
             }
 
             this.microphone = capture;
             this.status = "Voice: listening";
             Voicemage.LOGGER.info("Voice recognition is listening on: {}", capture.describe());
-            this.recognizeLoop(runId, capture, recognizer, chantRequired);
+            this.recognizeLoop(runId, capture, model, chantRequired);
          }
       } catch (Exception error) {
          if (this.isCurrent(runId)) {
@@ -173,7 +172,7 @@ public final class VoiceRecognitionService {
       }
    }
 
-   private void recognizeLoop(long runId, MicrophoneCapture capture, Recognizer recognizer, boolean initialChantRequired) {
+   private void recognizeLoop(long runId, MicrophoneCapture capture, Model model, boolean initialChantRequired) {
       byte[] buffer = new byte[MicrophoneCapture.OUTPUT_BUFFER_BYTES];
       String stablePartial = "";
       int stableCount = 0;
@@ -182,80 +181,102 @@ public final class VoiceRecognitionService {
       long lastCastNanos = 0L;
       boolean activeChantRequired = initialChantRequired;
       int activeGrammarVersion = this.grammarVersion;
+      Recognizer recognizer = null;
 
-      while (this.isCurrent(runId) && !Thread.currentThread().isInterrupted()) {
-         boolean required = this.explosionChantRequired;
-         int currentGrammarVersion = this.grammarVersion;
-         if (activeChantRequired != required || activeGrammarVersion != currentGrammarVersion) {
-            recognizer.reset();
-            recognizer.setGrammar(grammar(required));
-            activeChantRequired = required;
-            activeGrammarVersion = currentGrammarVersion;
-            stablePartial = "";
-            stableCount = 0;
-            this.partialText = "";
-         }
+      try {
+         recognizer = new Recognizer(model, SAMPLE_RATE, grammar(activeChantRequired));
 
-         int read = capture.read(buffer);
-         if (read < 0) {
-            break;
-         }
-
-         if (read > 0) {
-            if (recognizer.acceptWaveForm(buffer, read)) {
-               String text = jsonText(recognizer.getResult(), "text");
-               this.partialText = text;
-               Spell spell = Spell.byPhrase(text, this.explosionChantRequired);
-               if (spell != null && allowed(spell, lastSpell, lastCastNanos)) {
-                  this.onSpell.accept(spell, text);
-                  lastSpell = spell;
-                  lastCustomPhrase = null;
-                  lastCastNanos = System.nanoTime();
-               } else if (spell == null) {
-                  VoicemageConfig.CustomSpellEntry custom = VoicemageConfig.INSTANCE.findCustomSpell(text);
-                  if (custom != null && allowedCustom(custom.phrase, lastCustomPhrase, lastCastNanos)) {
-                     this.onSpell.accept(null, custom.phrase);
-                     lastSpell = null;
-                     lastCustomPhrase = custom.phrase;
-                     lastCastNanos = System.nanoTime();
-                  }
+         while (this.isCurrent(runId) && !Thread.currentThread().isInterrupted()) {
+            boolean required = this.explosionChantRequired;
+            int currentGrammarVersion = this.grammarVersion;
+            if (activeChantRequired != required || activeGrammarVersion != currentGrammarVersion) {
+               try {
+                  recognizer.close();
+               } catch (Exception ignored) {
                }
-
+               recognizer = new Recognizer(model, SAMPLE_RATE, grammar(required));
+               activeChantRequired = required;
+               activeGrammarVersion = currentGrammarVersion;
                stablePartial = "";
                stableCount = 0;
-            } else {
-               String partial = jsonText(recognizer.getPartialResult(), "partial");
-               this.partialText = partial;
-               if (partial.equals(stablePartial)) {
-                  stableCount++;
-               } else {
-                  stablePartial = partial;
-                  stableCount = 1;
-               }
+               this.partialText = "";
+               Voicemage.LOGGER.info("Voice recognition grammar refreshed (version {})", currentGrammarVersion);
+            }
 
-               Spell spell = Spell.byPhrase(partial, this.explosionChantRequired);
-               if (spell != null && stableCount >= 2 && allowed(spell, lastSpell, lastCastNanos)) {
-                  this.onSpell.accept(spell, partial);
-                  lastSpell = spell;
-                  lastCustomPhrase = null;
-                  lastCastNanos = System.nanoTime();
-                  recognizer.reset();
-                  this.partialText = "";
+            int read = capture.read(buffer);
+            if (read < 0) {
+               break;
+            }
+
+            if (read > 0) {
+               if (recognizer.acceptWaveForm(buffer, read)) {
+                  String text = cleanJsonText(recognizer.getResult(), "text");
+                  this.partialText = text;
+                  if (!text.isBlank()) {
+                     Spell spell = Spell.byPhrase(text, this.explosionChantRequired);
+                     if (spell != null && allowed(spell, lastSpell, lastCastNanos)) {
+                        this.onSpell.accept(spell, text);
+                        lastSpell = spell;
+                        lastCustomPhrase = null;
+                        lastCastNanos = System.nanoTime();
+                     } else if (spell == null) {
+                        VoicemageConfig.CustomSpellEntry custom = VoicemageConfig.INSTANCE.findCustomSpell(text);
+                        if (custom != null && allowedCustom(custom.phrase, lastCustomPhrase, lastCastNanos)) {
+                           Voicemage.LOGGER.info("Recognized custom spell: {}", custom.phrase);
+                           this.onSpell.accept(null, custom.phrase);
+                           lastSpell = null;
+                           lastCustomPhrase = custom.phrase;
+                           lastCastNanos = System.nanoTime();
+                        }
+                     }
+                  }
+
                   stablePartial = "";
                   stableCount = 0;
-               } else if (spell == null && stableCount >= 2) {
-                  VoicemageConfig.CustomSpellEntry custom = VoicemageConfig.INSTANCE.findCustomSpell(partial);
-                  if (custom != null && allowedCustom(custom.phrase, lastCustomPhrase, lastCastNanos)) {
-                     this.onSpell.accept(null, custom.phrase);
-                     lastSpell = null;
-                     lastCustomPhrase = custom.phrase;
-                     lastCastNanos = System.nanoTime();
-                     recognizer.reset();
-                     this.partialText = "";
-                     stablePartial = "";
-                     stableCount = 0;
+               } else {
+                  String partial = cleanJsonText(recognizer.getPartialResult(), "partial");
+                  this.partialText = partial;
+                  if (partial.equals(stablePartial)) {
+                     stableCount++;
+                  } else {
+                     stablePartial = partial;
+                     stableCount = 1;
+                  }
+
+                  if (!partial.isBlank() && stableCount >= 2) {
+                     Spell spell = Spell.byPhrase(partial, this.explosionChantRequired);
+                     if (spell != null && allowed(spell, lastSpell, lastCastNanos)) {
+                        this.onSpell.accept(spell, partial);
+                        lastSpell = spell;
+                        lastCustomPhrase = null;
+                        lastCastNanos = System.nanoTime();
+                        recognizer.reset();
+                        this.partialText = "";
+                        stablePartial = "";
+                        stableCount = 0;
+                     } else if (spell == null) {
+                        VoicemageConfig.CustomSpellEntry custom = VoicemageConfig.INSTANCE.findCustomSpell(partial);
+                        if (custom != null && allowedCustom(custom.phrase, lastCustomPhrase, lastCastNanos)) {
+                           Voicemage.LOGGER.info("Recognized custom spell (partial): {}", custom.phrase);
+                           this.onSpell.accept(null, custom.phrase);
+                           lastSpell = null;
+                           lastCustomPhrase = custom.phrase;
+                           lastCastNanos = System.nanoTime();
+                           recognizer.reset();
+                           this.partialText = "";
+                           stablePartial = "";
+                           stableCount = 0;
+                        }
+                     }
                   }
                }
+            }
+         }
+      } finally {
+         if (recognizer != null) {
+            try {
+               recognizer.close();
+            } catch (Exception ignored) {
             }
          }
       }
@@ -281,6 +302,17 @@ public final class VoiceRecognitionService {
       long elapsed = System.nanoTime() - previousNanos;
       long debounce = (previous != null && previous.equalsIgnoreCase(current)) ? 1500000000L : 350000000L;
       return elapsed >= debounce;
+   }
+
+   private static String cleanJsonText(String json, String key) {
+      String raw = jsonText(json, key);
+      if (raw == null) {
+         return "";
+      }
+      return raw.replace("[unk]", "")
+                .replaceAll("(?i)\\bunk\\b", "")
+                .replaceAll("\\s+", " ")
+                .trim();
    }
 
    private static String jsonText(String json, String key) {

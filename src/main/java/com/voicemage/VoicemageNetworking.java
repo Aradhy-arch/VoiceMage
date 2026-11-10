@@ -31,7 +31,14 @@ public final class VoicemageNetworking {
    private VoicemageNetworking() {
    }
 
-   private static boolean isOperator(ServerPlayer player) {
+   public static boolean isOperator(ServerPlayer player) {
+      if (player == null) {
+         return false;
+      }
+      MinecraftServer server = player.level().getServer();
+      if (server != null && (server.isSingleplayer() || server.isSingleplayerOwner(player.getGameProfile()))) {
+         return true;
+      }
       return Commands.hasPermission(Commands.LEVEL_GAMEMASTERS).test(player.createCommandSourceStack());
    }
 
@@ -80,29 +87,30 @@ public final class VoicemageNetworking {
             if (!isOperator(context.player())) {
                return;
             }
-            String phrase = payload.phrase().trim().toLowerCase(Locale.ROOT);
+            String phrase = VoicemageConfig.cleanPhrase(payload.phrase());
             if (phrase.isBlank() || Spell.byPhrase(phrase) != null) {
                return;
             }
-            ParticleType<?> type = VoicemageConfig.parseParticle(payload.particleName());
-            if (type == null) {
-               return;
+            String particleName = payload.particleName();
+            if (particleName == null || particleName.isBlank()) {
+               particleName = "minecraft:witch";
             }
             float mana = Math.max(0.0F, Math.min(100.0F, payload.manaCost()));
             float power = Math.max(0.0F, payload.damageOrEffect());
 
             VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpell(phrase);
             if (existing != null) {
-               existing.particleName = payload.particleName();
+               existing.particleName = particleName;
                existing.manaCost = mana;
                existing.damageOrEffect = power;
             } else {
                VoicemageConfig.INSTANCE.customSpells.add(
-                  new VoicemageConfig.CustomSpellEntry(phrase, payload.particleName(), mana, power)
+                  new VoicemageConfig.CustomSpellEntry(phrase, particleName, mana, power)
                );
             }
             VoicemageConfig.save();
             VoicemageNetworking.broadcastSettings(context.server());
+            Voicemage.LOGGER.info("Server saved custom spell '{}' (particle: {}, mana: {}, power: {})", phrase, particleName, mana, power);
          })
       );
       ServerPlayNetworking.registerGlobalReceiver(
@@ -110,13 +118,14 @@ public final class VoicemageNetworking {
             if (!isOperator(context.player())) {
                return;
             }
-            String phrase = payload.phrase().trim().toLowerCase(Locale.ROOT);
+            String phrase = VoicemageConfig.cleanPhrase(payload.phrase());
             boolean removed = VoicemageConfig.INSTANCE.customSpells.removeIf(
-               entry -> entry.phrase != null && entry.phrase.equalsIgnoreCase(phrase)
+               entry -> entry.phrase != null && VoicemageConfig.cleanPhrase(entry.phrase).equalsIgnoreCase(phrase)
             );
             if (removed) {
                VoicemageConfig.save();
                VoicemageNetworking.broadcastSettings(context.server());
+               Voicemage.LOGGER.info("Server deleted custom spell '{}'", phrase);
             }
          })
       );

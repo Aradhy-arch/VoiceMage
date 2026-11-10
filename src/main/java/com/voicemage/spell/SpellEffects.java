@@ -1123,8 +1123,10 @@ final class SpellEffects {
    }
    boolean castCustom(ServerPlayer player, VoicemageConfig.CustomSpellEntry custom) {
       ServerLevel level = player.level();
-      HitResult hit = aimedHit(player, VoicemageConfig.INSTANCE.skillShotRange, true);
-      Vec3 targetPos = hit.getLocation();
+      double range = VoicemageConfig.INSTANCE.skillShotRange;
+      HitResult hit = aimedHit(player, range, true);
+      Vec3 start = player.getEyePosition();
+      Vec3 targetPos = (hit != null && hit.getLocation() != null) ? hit.getLocation() : start.add(player.getLookAngle().scale(range));
 
       LivingEntity target = null;
       if (hit instanceof EntityHitResult entityHit && entityHit.getEntity() instanceof LivingEntity living) {
@@ -1140,13 +1142,25 @@ final class SpellEffects {
       }
 
       ParticleType<?> particleType = VoicemageConfig.parseParticle(custom.particleName);
-      if (particleType instanceof ParticleOptions options) {
-         level.sendParticles(options, targetPos.x, targetPos.y, targetPos.z, 35, 0.5, 0.5, 0.5, 0.05);
-      } else {
-         level.sendParticles(ParticleTypes.WITCH, targetPos.x, targetPos.y, targetPos.z, 35, 0.5, 0.5, 0.5, 0.05);
+      ParticleOptions options = (particleType instanceof ParticleOptions opt) ? opt : ParticleTypes.WITCH;
+
+      // Particle beam from player eyes to target
+      Vec3 ray = targetPos.subtract(start);
+      double dist = ray.length();
+      Vec3 dir = dist > 0.001 ? ray.normalize() : player.getLookAngle();
+      double step = Math.max(0.6, dist / 20.0);
+      for (double d = 0.5; d < dist; d += step) {
+         Vec3 p = start.add(dir.scale(d));
+         level.sendParticles(options, p.x, p.y, p.z, 1, 0.03, 0.03, 0.03, 0.0);
       }
 
+      // Target impact burst
+      level.sendParticles(options, targetPos.x, targetPos.y, targetPos.z, 35, 0.5, 0.5, 0.5, 0.06);
+
       level.playSound(null, BlockPos.containing(targetPos), SoundEvents.ILLUSIONER_CAST_SPELL, SoundSource.PLAYERS, 1.2F, 1.2F);
+      level.playSound(null, player.blockPosition(), SoundEvents.ENCHANTMENT_TABLE_USE, SoundSource.PLAYERS, 0.9F, 1.4F);
+
+      player.sendSystemMessage(Component.literal("§a✨ Cast " + custom.phrase.toUpperCase(Locale.ROOT) + "!"));
       return true;
    }
    void playerLeft(ServerPlayer player) {

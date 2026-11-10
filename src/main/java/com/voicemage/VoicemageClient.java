@@ -51,6 +51,7 @@ public final class VoicemageClient implements ClientModInitializer {
    private static String feedback = "";
 
    public void onInitializeClient() {
+      VoicemageConfig.load();
       voice = new VoiceRecognitionService(VoicemageClient::heardSpell);
       MicrophoneCommands.register(() -> {
          Minecraft minecraft = Minecraft.getInstance();

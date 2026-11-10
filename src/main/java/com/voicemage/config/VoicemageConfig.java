@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 
@@ -304,21 +305,45 @@ public final class VoicemageConfig {
          if (entries != null) {
             INSTANCE.customSpells = new ArrayList<>(List.of(entries));
             INSTANCE.sanitize();
+            save();
          }
       } catch (Exception e) {
          Voicemage.LOGGER.error("Failed to parse custom spells JSON", e);
       }
    }
 
+   public static String cleanPhrase(String text) {
+      if (text == null) {
+         return "";
+      }
+      String clean = text.replace("[unk]", "").replaceAll("(?i)\\bunk\\b", "");
+      return clean.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " ");
+   }
+
    public CustomSpellEntry findCustomSpell(String text) {
       if (text == null || text.isBlank() || this.customSpells == null) {
          return null;
       }
-      String normalized = text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " ");
+      String normalized = cleanPhrase(text);
+      if (normalized.isBlank()) {
+         return null;
+      }
+
+      // 1. Exact match
       for (CustomSpellEntry entry : this.customSpells) {
          if (entry.phrase != null) {
-            String entryNorm = entry.phrase.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " ");
+            String entryNorm = cleanPhrase(entry.phrase);
             if (entryNorm.equals(normalized)) {
+               return entry;
+            }
+         }
+      }
+
+      // 2. Substring match
+      for (CustomSpellEntry entry : this.customSpells) {
+         if (entry.phrase != null) {
+            String entryNorm = cleanPhrase(entry.phrase);
+            if (!entryNorm.isBlank() && (normalized.contains(entryNorm) || (normalized.length() >= 4 && entryNorm.contains(normalized)))) {
                return entry;
             }
          }
@@ -328,7 +353,7 @@ public final class VoicemageConfig {
 
    public static ParticleType<?> parseParticle(String particleName) {
       if (particleName == null || particleName.isBlank()) {
-         return null;
+         return ParticleTypes.WITCH;
       }
       String trimmed = particleName.trim().toLowerCase(Locale.ROOT);
       if (!trimmed.contains(":")) {
@@ -336,9 +361,9 @@ public final class VoicemageConfig {
       }
       Identifier id = Identifier.tryParse(trimmed);
       if (id == null) {
-         return null;
+         return ParticleTypes.WITCH;
       }
-      return BuiltInRegistries.PARTICLE_TYPE.get(id).map(net.minecraft.core.Holder::value).orElse(null);
+      return BuiltInRegistries.PARTICLE_TYPE.get(id).map(net.minecraft.core.Holder::value).orElse(ParticleTypes.WITCH);
    }
 
    public static void save() {

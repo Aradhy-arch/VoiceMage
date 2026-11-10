@@ -76,7 +76,7 @@ public enum Spell {
       }
 
       // Spelling variants that are part of the recognizer's grammar (see VoiceRecognitionService).
-      return switch (normalized) {
+      Spell variant = switch (normalized) {
          case "fire ball" -> FIREBALL;
          case "pit fall" -> PITFALL;
          case "lightening" -> LIGHTNING;
@@ -84,9 +84,25 @@ public enum Spell {
          case "poly morph" -> POLYMORPH;
          default -> null;
       };
+      if (variant != null) {
+         return variant;
+      }
+
+      // Check for whole phrase match if surrounded by other recognized words
+      for (Spell spell : values()) {
+         if (spell != EXPLOSION && normalized.contains(spell.phrase)) {
+            return spell;
+         }
+      }
+
+      return null;
    }
 
    private static String normalize(String text) {
-      return text.toLowerCase(Locale.ROOT).replaceAll("[^a-z ]", " ").trim().replaceAll("\\s+", " ");
+      if (text == null) {
+         return "";
+      }
+      String clean = text.replace("[unk]", "").replaceAll("(?i)\\bunk\\b", "");
+      return clean.toLowerCase(Locale.ROOT).replaceAll("[^a-z ]", " ").trim().replaceAll("\\s+", " ");
    }
 }

@@ -148,6 +148,7 @@ public final class SpellManager {
       int cost = (int)Math.ceil(custom.manaCost);
       if (state.mana + 1.0E-4 < cost) {
          this.sync(player, state, -1, 2);
+         player.sendSystemMessage(Component.literal("§cNot enough mana! (" + (int)Math.round(state.mana) + "/" + cost + ")"));
          return;
       }
 

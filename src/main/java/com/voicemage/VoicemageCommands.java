@@ -21,6 +21,16 @@ public final class VoicemageCommands {
    private VoicemageCommands() {
    }
 
+   private static boolean canManage(CommandSourceStack source) {
+      if (source == null) {
+         return false;
+      }
+      if (source.getServer() != null && source.getServer().isSingleplayer()) {
+         return true;
+      }
+      return source.hasPermission(Commands.LEVEL_GAMEMASTERS);
+   }
+
    public static void register() {
       CommandRegistrationCallback.EVENT.register((CommandRegistrationCallback)(dispatcher, access, environment) -> {
          dispatcher.register(voicemageCommand());
@@ -83,7 +93,7 @@ public final class VoicemageCommands {
                return 1;
             }
          );
-      root.then(((LiteralArgumentBuilder)Commands.literal("reload").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))).executes(context -> {
+      root.then(((LiteralArgumentBuilder)Commands.literal("reload").requires(VoicemageCommands::canManage)).executes(context -> {
          boolean loaded = VoicemageConfig.load();
          VoicemageNetworking.broadcastSettings(((CommandSourceStack)context.getSource()).getServer());
          if (!loaded) {
@@ -96,7 +106,7 @@ public final class VoicemageCommands {
          return 1;
       }));
       root.then(
-         ((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("regen").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+         ((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("regen").requires(VoicemageCommands::canManage))
                .executes(context -> {
                   double rate = VoicemageConfig.INSTANCE.manaRegenerationPerSecond;
                   ((CommandSourceStack)context.getSource()).sendSuccess(() -> Component.literal("Mana regeneration is " + rate + " mana/second."), false);
@@ -117,15 +127,44 @@ public final class VoicemageCommands {
 
       root.then(chantCommand());
       root.then(settingsCommand());
+      root.then(castCommand());
       root.then(spellGuideCommand("spells"));
       return root;
+   }
+
+   private static LiteralArgumentBuilder<CommandSourceStack> castCommand() {
+      return Commands.literal("cast")
+         .then(
+            Commands.argument("spellOrPhrase", StringArgumentType.greedyString())
+               .executes(context -> {
+                  CommandSourceStack source = (CommandSourceStack)context.getSource();
+                  ServerPlayer player = source.getPlayer();
+                  if (player == null) {
+                     source.sendFailure(Component.literal("Only players can cast spells."));
+                     return 0;
+                  }
+                  String input = StringArgumentType.getString(context, "spellOrPhrase").trim();
+                  Spell spell = Spell.byPhrase(input, VoicemageConfig.INSTANCE.explosionChantRequired);
+                  if (spell != null) {
+                     Voicemage.SPELLS.cast(player, spell.networkId());
+                     return 1;
+                  }
+                  VoicemageConfig.CustomSpellEntry custom = VoicemageConfig.INSTANCE.findCustomSpell(input);
+                  if (custom != null) {
+                     Voicemage.SPELLS.castCustom(player, custom.phrase);
+                     return 1;
+                  }
+                  source.sendFailure(Component.literal("No spell or custom spell recognized for: \"" + input + "\""));
+                  return 0;
+               })
+         );
    }
 
    private static LiteralArgumentBuilder<CommandSourceStack> spellCostCommand(Spell spell) {
       return (LiteralArgumentBuilder<CommandSourceStack>)((LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal(
                   spell.name().toLowerCase(Locale.ROOT)
                )
-               .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+               .requires(VoicemageCommands::canManage))
             .executes(
                context -> {
                   ((CommandSourceStack)context.getSource())
@@ -166,7 +205,7 @@ public final class VoicemageCommands {
                   )
             ))
          .then(
-            ((RequiredArgumentBuilder)Commands.argument("required", BoolArgumentType.bool()).requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+            ((RequiredArgumentBuilder)Commands.argument("required", BoolArgumentType.bool()).requires(VoicemageCommands::canManage))
                .executes(
                   context -> {
                      boolean required = BoolArgumentType.getBool(context, "required");
@@ -186,7 +225,7 @@ public final class VoicemageCommands {
 
    private static LiteralArgumentBuilder<CommandSourceStack> settingsCommand() {
       LiteralArgumentBuilder<CommandSourceStack> settings = (LiteralArgumentBuilder<CommandSourceStack>)((LiteralArgumentBuilder<CommandSourceStack>)Commands.literal("settings")
-         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+         .requires(VoicemageCommands::canManage))
          .executes(context -> {
             CommandSourceStack source = (CommandSourceStack)context.getSource();
             ServerPlayer player = source.getPlayer();
@@ -200,7 +239,7 @@ public final class VoicemageCommands {
       settings.then(Commands.literal("list").executes(context -> listCustomSpells((CommandSourceStack)context.getSource())));
 
       settings.then(
-         ((LiteralArgumentBuilder)Commands.literal("clear").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+         ((LiteralArgumentBuilder)Commands.literal("clear").requires(VoicemageCommands::canManage))
             .executes(context -> {
                CommandSourceStack source = (CommandSourceStack)context.getSource();
                int count = VoicemageConfig.INSTANCE.customSpells.size();
@@ -213,7 +252,7 @@ public final class VoicemageCommands {
       );
 
       settings.then(
-         ((LiteralArgumentBuilder)Commands.literal("remove").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+         ((LiteralArgumentBuilder)Commands.literal("remove").requires(VoicemageCommands::canManage))
             .then(
                Commands.argument("phrase", StringArgumentType.string())
                   .executes(context -> removeCustomSpell((CommandSourceStack)context.getSource(), StringArgumentType.getString(context, "phrase")))
@@ -221,7 +260,7 @@ public final class VoicemageCommands {
       );
 
       settings.then(
-         ((LiteralArgumentBuilder)Commands.literal("add").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+         ((LiteralArgumentBuilder)Commands.literal("add").requires(VoicemageCommands::canManage))
             .then(
                Commands.argument("phrase", StringArgumentType.string())
                   .then(
@@ -315,29 +354,29 @@ public final class VoicemageCommands {
          return 0;
       }
 
-      String normalizedPhrase = phrase.trim().toLowerCase(Locale.ROOT);
+      String normalizedPhrase = VoicemageConfig.cleanPhrase(phrase);
+      if (normalizedPhrase.isBlank()) {
+         source.sendFailure(Component.literal("Spell phrase cannot be blank."));
+         return 0;
+      }
+
       if (Spell.byPhrase(normalizedPhrase) != null) {
          source.sendFailure(Component.literal("Phrase \"" + phrase + "\" is already used by a built-in spell."));
          return 0;
       }
 
-      ParticleType<?> particleType = VoicemageConfig.parseParticle(particleName);
-      if (particleType == null) {
-         source.sendFailure(Component.literal("Invalid particle name: \"" + particleName + "\". Valid examples: minecraft:flame, minecraft:witch, minecraft:soul_fire_flame, minecraft:sonic_boom"));
-         return 0;
-      }
-
+      String pName = (particleName != null && !particleName.isBlank()) ? particleName.trim().toLowerCase(Locale.ROOT) : "minecraft:witch";
       float clampedMana = Math.max(0.0F, Math.min(100.0F, manaCost));
       float clampedDamage = Math.max(0.0F, damageOrEffect);
 
       VoicemageConfig.CustomSpellEntry existing = VoicemageConfig.INSTANCE.findCustomSpell(normalizedPhrase);
       if (existing != null) {
-         existing.particleName = particleName.trim().toLowerCase(Locale.ROOT);
+         existing.particleName = pName;
          existing.manaCost = clampedMana;
          existing.damageOrEffect = clampedDamage;
       } else {
          VoicemageConfig.INSTANCE.customSpells.add(
-            new VoicemageConfig.CustomSpellEntry(normalizedPhrase, particleName.trim().toLowerCase(Locale.ROOT), clampedMana, clampedDamage)
+            new VoicemageConfig.CustomSpellEntry(normalizedPhrase, pName, clampedMana, clampedDamage)
          );
       }
 
@@ -345,7 +384,7 @@ public final class VoicemageCommands {
       VoicemageNetworking.broadcastSettings(source.getServer());
 
       source.sendSuccess(
-         () -> Component.literal("Custom spell \"" + normalizedPhrase + "\" saved with particle " + particleName + " (cost: " + clampedMana + ", effect: " + clampedDamage + ")."),
+         () -> Component.literal("Custom spell \"" + normalizedPhrase + "\" saved with particle " + pName + " (cost: " + clampedMana + ", effect: " + clampedDamage + ")."),
          true
       );
       return 1;
@@ -357,9 +396,9 @@ public final class VoicemageCommands {
          return 0;
       }
 
-      String normalized = phrase.trim().toLowerCase(Locale.ROOT);
+      String normalized = VoicemageConfig.cleanPhrase(phrase);
       boolean removed = VoicemageConfig.INSTANCE.customSpells.removeIf(
-         entry -> entry.phrase != null && entry.phrase.trim().toLowerCase(Locale.ROOT).equals(normalized)
+         entry -> entry.phrase != null && VoicemageConfig.cleanPhrase(entry.phrase).equals(normalized)
       );
 
       if (removed) {

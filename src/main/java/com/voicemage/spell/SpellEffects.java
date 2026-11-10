@@ -246,7 +246,6 @@ final class SpellEffects {
       this.journalDirty = true;
       return true;
    }
-
    private void tickFallingSpells(MinecraftServer server) {
       Iterator<SpellEffects.FallingSpellTask> iterator = this.fallingSpells.iterator();
 
@@ -651,7 +650,6 @@ final class SpellEffects {
       level.playSound(null, player.blockPosition(), SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 1.0F, 0.8F);
       return true;
    }
-
    private boolean pitfall(ServerPlayer player) {
       if (!VoicemageConfig.INSTANCE.pitfallEnabled) {
          return false;
@@ -703,7 +701,6 @@ final class SpellEffects {
       level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.8F, 1.45F);
       return true;
    }
-
    private boolean lightning(ServerPlayer player) {
       ServerLevel level = player.level();
       HitResult hit = aimedHit(player, VoicemageConfig.INSTANCE.lightningRange, true);
@@ -728,7 +725,6 @@ final class SpellEffects {
 
       return true;
    }
-
    private boolean earthWall(ServerPlayer player) {
       ServerLevel level = player.level();
       Vec3 flatLook = flatLook(player);
@@ -814,7 +810,6 @@ final class SpellEffects {
 
       return true;
    }
-
    private boolean meteor(ServerPlayer player) {
       HitResult hit = aimedHit(player, VoicemageConfig.INSTANCE.meteorRange, true);
       Vec3 target = hit.getLocation().add(0.0, 0.15, 0.0);
@@ -949,6 +944,9 @@ final class SpellEffects {
       return true;
    }
 
+   boolean isFlightActive(UUID uuid) {
+      return this.flightUntil.containsKey(uuid);
+   }
    private void purgeFrozen(MinecraftServer server) {
       if (!this.frozenUntil.isEmpty() && server.getTickCount() % 200 == 0) {
          long now = server.overworld().getGameTime();
@@ -1057,7 +1055,6 @@ final class SpellEffects {
       player.level().playSound(null, target.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 1.8F);
       return true;
    }
-
    private boolean explosion(ServerPlayer player) {
       ServerLevel level = player.level();
       Vec3 target = aimedHit(player, VoicemageConfig.INSTANCE.explosionRange, true).getLocation().add(0.0, 0.15, 0.0);
@@ -1071,8 +1068,7 @@ final class SpellEffects {
 
       Long activeFlight = this.flightUntil.get(player.getUUID());
       if (activeFlight != null && now < activeFlight) {
-         long remainingSec = (activeFlight - now + 19) / 20;
-         player.sendSystemMessage(Component.literal("§cFlight is already active! (" + remainingSec + "s remaining)"));
+         player.sendSystemMessage(Component.literal("§cFlight is already active!"));
          return false;
       }
 
@@ -1099,7 +1095,6 @@ final class SpellEffects {
       level.playSound(null, player.blockPosition(), (SoundEvent)SoundEvents.WIND_CHARGE_BURST.value(), SoundSource.PLAYERS, 1.4F, 1.0F);
       return true;
    }
-
    private boolean getDoomed(ServerPlayer player) {
       LivingEntity target = skillTarget(player, VoicemageConfig.INSTANCE.skillShotRange);
       if (target == null) {
@@ -1126,7 +1121,6 @@ final class SpellEffects {
       level.playSound(null, target.blockPosition(), SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.5F, 1.0F);
       return true;
    }
-
    boolean castCustom(ServerPlayer player, VoicemageConfig.CustomSpellEntry custom) {
       ServerLevel level = player.level();
       HitResult hit = aimedHit(player, VoicemageConfig.INSTANCE.skillShotRange, true);
@@ -1155,7 +1149,6 @@ final class SpellEffects {
       level.playSound(null, BlockPos.containing(targetPos), SoundEvents.ILLUSIONER_CAST_SPELL, SoundSource.PLAYERS, 1.2F, 1.2F);
       return true;
    }
-
    void playerLeft(ServerPlayer player) {
       Long expires = this.flightUntil.remove(player.getUUID());
       if (expires != null && !player.isCreative() && !player.isSpectator()) {
@@ -1191,10 +1184,6 @@ final class SpellEffects {
             player.sendSystemMessage(Component.literal("§eFlight has expired! (" + cdSeconds + "s cooldown started)"));
             player.level().sendParticles(ParticleTypes.CLOUD, player.getX(), player.getY(), player.getZ(), 20, 0.4, 0.4, 0.4, 0.05);
             iterator.remove();
-         } else if (remainingTicks == 60) {
-            player.sendSystemMessage(Component.literal("§6Flight expiring in 3 seconds..."));
-         } else if (remainingTicks == 20) {
-            player.sendSystemMessage(Component.literal("§cFlight expiring in 1 second!"));
          }
       }
    }
@@ -1222,7 +1211,6 @@ final class SpellEffects {
       );
       return true;
    }
-
    private boolean placeTemporary(ServerLevel level, BlockPos pos, BlockState state, long expires) {
       if (!level.getBlockState(pos).isAir()) {
          return false;
@@ -1236,7 +1224,6 @@ final class SpellEffects {
       this.journalDirty = true;
       return true;
    }
-
    private static Vec3 flatLook(ServerPlayer player) {
       Vec3 result = new Vec3(player.getLookAngle().x, 0.0, player.getLookAngle().z);
       return result.lengthSqr() < 0.001 ? new Vec3(0.0, 0.0, 1.0) : result.normalize();

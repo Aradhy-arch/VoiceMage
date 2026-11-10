@@ -23,28 +23,16 @@ public final class VoicemageCommands {
 
    public static void register() {
       CommandRegistrationCallback.EVENT.register((CommandRegistrationCallback)(dispatcher, access, environment) -> {
-         dispatcher.register(spellListCommand());
+         dispatcher.register(spellGuideCommand("spells"));
+         dispatcher.register(spellGuideCommand("grimoire"));
+         dispatcher.register(spellGuideCommand("grimwore"));
+         dispatcher.register(spellGuideCommand("g"));
          dispatcher.register(voicemageCommand());
       });
    }
 
-   private static LiteralArgumentBuilder<CommandSourceStack> spellListCommand() {
-      return (LiteralArgumentBuilder<CommandSourceStack>)((LiteralArgumentBuilder<CommandSourceStack>)Commands.literal("spells")
-         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
-         .executes(context -> {
-            CommandSourceStack source = (CommandSourceStack)context.getSource();
-            ServerPlayer player = source.getPlayer();
-            if (player != null) {
-               VoicemageNetworking.openSpellsScreen(player);
-               return 1;
-            }
-            return showSpellsList(source);
-         });
-   }
-
-   private static LiteralArgumentBuilder<CommandSourceStack> voicemageSpellsCommand() {
-      return (LiteralArgumentBuilder<CommandSourceStack>)((LiteralArgumentBuilder<CommandSourceStack>)Commands.literal("spells")
-         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
+   private static LiteralArgumentBuilder<CommandSourceStack> spellGuideCommand(String alias) {
+      return Commands.literal(alias)
          .executes(context -> {
             CommandSourceStack source = (CommandSourceStack)context.getSource();
             ServerPlayer player = source.getPlayer();
@@ -77,20 +65,25 @@ public final class VoicemageCommands {
       LiteralArgumentBuilder<CommandSourceStack> root = (LiteralArgumentBuilder<CommandSourceStack>)Commands.literal("voicemage")
          .executes(
             context -> {
+               CommandSourceStack source = (CommandSourceStack)context.getSource();
+               ServerPlayer player = source.getPlayer();
+               if (player != null) {
+                  VoicemageNetworking.openSpellsScreen(player);
+                  return 1;
+               }
                VoicemageConfig config = VoicemageConfig.INSTANCE;
                String chantRule = config.explosionChantRequired ? "Explosion requires a full chant." : "Say Explosion to cast it.";
-               ((CommandSourceStack)context.getSource())
-                  .sendSuccess(
-                     () -> Component.literal(
-                        "voicemage — Fireball, Pitfall, Heal, Lightning, Earth Wall, Blink, Magic Missile, Meteor, Wind Blast, Freeze, Clone, Polymorph, Shrink, Explosion, Fly, and Get Doomed. Maximum mana "
-                           + config.maximumMana
-                           + ", regeneration "
-                           + config.manaRegenerationPerSecond
-                           + "/second. "
-                           + chantRule
-                     ),
-                     false
-                  );
+               source.sendSuccess(
+                  () -> Component.literal(
+                     "voicemage — Fireball, Pitfall, Heal, Lightning, Earth Wall, Blink, Magic Missile, Meteor, Wind Blast, Freeze, Clone, Polymorph, Shrink, Explosion, Fly, and Get Doomed. Maximum mana "
+                        + config.maximumMana
+                        + ", regeneration "
+                        + config.manaRegenerationPerSecond
+                        + "/second. "
+                        + chantRule
+                  ),
+                  false
+               );
                return 1;
             }
          );
@@ -128,7 +121,10 @@ public final class VoicemageCommands {
 
       root.then(chantCommand());
       root.then(settingsCommand());
-      root.then(voicemageSpellsCommand());
+      root.then(spellGuideCommand("spells"));
+      root.then(spellGuideCommand("grimoire"));
+      root.then(spellGuideCommand("grimwore"));
+      root.then(spellGuideCommand("g"));
       return root;
    }
 

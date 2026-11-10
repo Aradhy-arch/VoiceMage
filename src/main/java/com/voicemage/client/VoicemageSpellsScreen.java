@@ -1,15 +1,10 @@
 package com.voicemage.client;
 
 import com.voicemage.config.VoicemageConfig;
-import com.voicemage.network.SaveCustomSpellPayload;
-import com.voicemage.network.UpdateSpellCostPayload;
 import com.voicemage.spell.Spell;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -62,26 +57,22 @@ public final class VoicemageSpellsScreen extends Screen {
       public boolean isCustom() {
          return this.custom != null;
       }
+
+      public int manaCost() {
+         if (this.custom != null) {
+            return (int) Math.ceil(this.custom.manaCost);
+         }
+         return VoicemageConfig.INSTANCE.manaCost(this.spell);
+      }
    }
 
    private Category selectedCategory = Category.ALL;
    private String searchQuery = "";
    private int page = 0;
-   private String statusMessage = "";
-   private int statusColor = 0xFF55FF55;
-
-   private final Map<Spell, Integer> pendingCosts = new HashMap<>();
-   private final Map<String, Integer> pendingCustomCosts = new HashMap<>();
    private EditBox searchBox;
 
    public VoicemageSpellsScreen() {
       super(Component.literal("VoiceMage Grimoire"));
-      for (Spell spell : Spell.values()) {
-         this.pendingCosts.put(spell, VoicemageConfig.INSTANCE.manaCost(spell));
-      }
-      for (VoicemageConfig.CustomSpellEntry custom : VoicemageConfig.INSTANCE.customSpells) {
-         this.pendingCustomCosts.put(custom.phrase, (int)Math.ceil(custom.manaCost));
-      }
    }
 
    private List<SpellDisplayEntry> buildAllEntries() {
@@ -166,93 +157,6 @@ public final class VoicemageSpellsScreen extends Screen {
       });
       this.addRenderableWidget(this.searchBox);
 
-      // Spell Cards
-      List<SpellDisplayEntry> entries = this.filteredEntries();
-      int maxPage = Math.max(0, (entries.size() - 1) / SPELLS_PER_PAGE);
-      if (this.page > maxPage) {
-         this.page = maxPage;
-      }
-
-      int startIndex = this.page * SPELLS_PER_PAGE;
-      int cardStartY = boxY + 48;
-      int cardH = 43;
-
-      for (int i = 0; i < SPELLS_PER_PAGE; i++) {
-         int idx = startIndex + i;
-         if (idx < entries.size()) {
-            SpellDisplayEntry entry = entries.get(idx);
-            int cardY = cardStartY + i * (cardH + 2);
-            int cardX = boxX + 10;
-
-            // Operator Mana Cost Tuner Buttons on the right
-            int btnY = cardY + 2;
-            if (!entry.isCustom()) {
-               final Spell spell = entry.spell;
-               // [-]
-               this.addRenderableWidget(
-                  Button.builder(Component.literal("-"), btn -> {
-                     int current = this.pendingCosts.getOrDefault(spell, VoicemageConfig.INSTANCE.manaCost(spell));
-                     int updated = Math.max(0, current - 5);
-                     this.pendingCosts.put(spell, updated);
-                     this.refresh();
-                  }).bounds(cardX + 268, btnY, 14, 14).build()
-               );
-               // [+]
-               this.addRenderableWidget(
-                  Button.builder(Component.literal("+"), btn -> {
-                     int current = this.pendingCosts.getOrDefault(spell, VoicemageConfig.INSTANCE.manaCost(spell));
-                     int updated = Math.min(100, current + 5);
-                     this.pendingCosts.put(spell, updated);
-                     this.refresh();
-                  }).bounds(cardX + 302, btnY, 14, 14).build()
-               );
-               // [Save]
-               this.addRenderableWidget(
-                  Button.builder(Component.literal("§aSave"), btn -> {
-                     int newCost = this.pendingCosts.getOrDefault(spell, VoicemageConfig.INSTANCE.manaCost(spell));
-                     VoicemageConfig.setManaCost(spell, newCost);
-                     ClientPlayNetworking.send(new UpdateSpellCostPayload(spell.networkId(), newCost));
-                     this.statusMessage = "✔ " + spell.displayName() + " cost updated to " + newCost + " mana!";
-                     this.statusColor = 0xFF55FF55;
-                  }).bounds(cardX + 322, btnY, 42, 14).build()
-               );
-            } else {
-               final VoicemageConfig.CustomSpellEntry custom = entry.custom;
-               // [-]
-               this.addRenderableWidget(
-                  Button.builder(Component.literal("-"), btn -> {
-                     int current = this.pendingCustomCosts.getOrDefault(custom.phrase, (int)Math.ceil(custom.manaCost));
-                     int updated = Math.max(0, current - 5);
-                     this.pendingCustomCosts.put(custom.phrase, updated);
-                     custom.manaCost = updated;
-                     this.refresh();
-                  }).bounds(cardX + 268, btnY, 14, 14).build()
-               );
-               // [+]
-               this.addRenderableWidget(
-                  Button.builder(Component.literal("+"), btn -> {
-                     int current = this.pendingCustomCosts.getOrDefault(custom.phrase, (int)Math.ceil(custom.manaCost));
-                     int updated = Math.min(100, current + 5);
-                     this.pendingCustomCosts.put(custom.phrase, updated);
-                     custom.manaCost = updated;
-                     this.refresh();
-                  }).bounds(cardX + 302, btnY, 14, 14).build()
-               );
-               // [Save]
-               this.addRenderableWidget(
-                  Button.builder(Component.literal("§aSave"), btn -> {
-                     int newCost = this.pendingCustomCosts.getOrDefault(custom.phrase, (int)Math.ceil(custom.manaCost));
-                     custom.manaCost = newCost;
-                     VoicemageConfig.save();
-                     ClientPlayNetworking.send(new SaveCustomSpellPayload(custom.phrase, custom.particleName, custom.manaCost, custom.damageOrEffect));
-                     this.statusMessage = "✔ " + custom.phrase + " cost updated to " + newCost + " mana!";
-                     this.statusColor = 0xFF55FF55;
-                  }).bounds(cardX + 322, btnY, 42, 14).build()
-               );
-            }
-         }
-      }
-
       // Bottom Bar Navigation
       int bottomY = boxY + boxH - 24;
       this.addRenderableWidget(
@@ -304,8 +208,7 @@ public final class VoicemageSpellsScreen extends Screen {
       // Header Banner
       graphics.fill(boxX, boxY, boxX + boxW, boxY + 26, 0xFF1B1D28);
       graphics.fill(boxX, boxY + 26, boxX + boxW, boxY + 27, 0xFFD4AF37);
-      graphics.centeredText(this.font, "§6§l✦ VOICEMAGE GRIMOIRE ✦§r §7— Spell Tome§r", this.width / 2, boxY + 8, 0xFFFFAA00);
-      graphics.text(this.font, "§d[OP TUNER]§r", boxX + 8, boxY + 9, 0xFFFF77FF, false);
+      graphics.centeredText(this.font, "§6§l✦ VOICEMAGE GRIMOIRE ✦§r §7— Spell Guidebook§r", this.width / 2, boxY + 8, 0xFFFFAA00);
 
       // Spell Cards Rendering
       List<SpellDisplayEntry> entries = this.filteredEntries();
@@ -346,25 +249,22 @@ public final class VoicemageSpellsScreen extends Screen {
                String badge = "§8[§7" + entry.category.label.toUpperCase(Locale.ROOT) + "§8]§r";
                graphics.text(this.font, badge, cardX + 115, cardY + 4, 0xFFAAAAAA, false);
 
-               // Mana Tuner Label & Cost Display
-               int currentCost = entry.isCustom()
-                  ? this.pendingCustomCosts.getOrDefault(entry.custom.phrase, (int)Math.ceil(entry.custom.manaCost))
-                  : this.pendingCosts.getOrDefault(entry.spell, VoicemageConfig.INSTANCE.manaCost(entry.spell));
+               // Top Right: Mana Cost (configured by OP)
+               String manaStr = "§bMana Cost: §d§l" + entry.manaCost() + "§r";
+               int manaW = this.font.width(manaStr);
+               graphics.text(this.font, manaStr, cardX + cardW - manaW - 8, cardY + 4, 0xFF88CCFF, true);
 
-               graphics.text(this.font, "§bMana:§r", cardX + 230, cardY + 5, 0xFF88CCFF, true);
-               graphics.centeredText(this.font, "§d" + currentCost + "§r", cardX + 291, cardY + 5, 0xFFFF88FF);
-
-               // Middle Line: Voice Phrase
+               // Middle Line: Voice Incantation
                String phraseStr = "§eIncantation: §f\"" + entry.phrase + "\"§r";
-               if (phraseStr.length() > 60) {
-                  phraseStr = phraseStr.substring(0, 57) + "...\"";
+               if (phraseStr.length() > 68) {
+                  phraseStr = phraseStr.substring(0, 65) + "...\"";
                }
                graphics.text(this.font, phraseStr, cardX + 8, cardY + 17, 0xFFCCCCCC, false);
 
                // Bottom Line: Description
                String desc = "§7" + entry.description + "§r";
-               if (desc.length() > 64) {
-                  desc = desc.substring(0, 61) + "...";
+               if (desc.length() > 72) {
+                  desc = desc.substring(0, 69) + "...";
                }
                graphics.text(this.font, desc, cardX + 8, cardY + 29, 0xFF888888, false);
             }
@@ -378,10 +278,6 @@ public final class VoicemageSpellsScreen extends Screen {
       // Page counter
       String pageCounter = "§7Page §f" + (this.page + 1) + " §7of §f" + (maxPage + 1) + " §7(" + totalEntries + " Spells)§r";
       graphics.centeredText(this.font, pageCounter, this.width / 2, bottomSepY + 6, 0xFFCCCCCC);
-
-      if (!this.statusMessage.isEmpty()) {
-         graphics.centeredText(this.font, this.statusMessage, this.width / 2, bottomSepY - 10, this.statusColor);
-      }
 
       super.extractRenderState(graphics, mouseX, mouseY, partialTick);
    }

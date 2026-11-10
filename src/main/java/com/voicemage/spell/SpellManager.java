@@ -31,6 +31,10 @@ public final class SpellManager {
       return this.effects.isFrozen(entity);
    }
 
+   public boolean isFlightActive(UUID uuid) {
+      return this.effects.isFlightActive(uuid);
+   }
+
    public boolean handleTemporaryBreak(ServerLevel level, BlockPos pos, BlockState state) {
       return this.effects.breakTemporary(level, pos, state);
    }

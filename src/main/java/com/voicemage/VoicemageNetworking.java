@@ -42,9 +42,7 @@ public final class VoicemageNetworking {
    }
 
    public static void openSpellsScreen(ServerPlayer player) {
-      if (isOperator(player)) {
-         ServerPlayNetworking.send(player, new OpenSpellsPayload(VoicemageConfig.fullConfigJson()));
-      }
+      ServerPlayNetworking.send(player, new OpenSpellsPayload(VoicemageConfig.fullConfigJson()));
    }
 
    public static void syncSettings(ServerPlayer player) {

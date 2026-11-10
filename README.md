@@ -76,6 +76,16 @@ Operators can toggle whether the chant is required via `/voicemage chant false` 
 
 ---
 
+## ⚙️ Installation
+
+1. Install [Fabric Loader](https://fabricmc.net/use/) (0.19.3+) for Minecraft 26.2 and the Fabric API.
+2. Ensure you have **Java 25+** installed.
+3. Download `voicemage-26.2-<version>.jar` from the [Realeses](https://github.com/Aradhy-arch/VoiceMage/releases) Tab.
+4. Place the mod into your `mods` folder (both client and server).
+5. Launch the game! On first startup, the mod extracts the built-in speech model. When the HUD shows **Voice: listening**, you are ready to cast!
+
+---
+
 ## 🎮 Commands & Permissions
 
 ### Server Commands
@@ -100,16 +110,6 @@ Operators can toggle whether the chant is required via `/voicemage chant false` 
 | `/voicemic <id>` | Switches microphone and restarts recognition |
 | `/voicemic default` | Resets to system default microphone |
 | **V** | Mute / unmute voice recognition |
-
----
-
-## ⚙️ Installation
-
-1. Install [Fabric Loader](https://fabricmc.net/use/) (0.19.3+) for Minecraft 26.2 and the Fabric API.
-2. Ensure you have **Java 25+** installed.
-3. Download `voicemage-26.2-<version>.jar` from the [Realeses](https://github.com/Aradhy-arch/VoiceMage/releases) Tab.
-4. Place the mod into your `mods` folder (both client and server).
-5. Launch the game! On first startup, the mod extracts the built-in speech model. When the HUD shows **Voice: listening**, you are ready to cast!
 
 ---
 

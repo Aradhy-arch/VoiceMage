@@ -19,13 +19,13 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew build
-      - name: Print causeFallDamage signature
+      - name: Build and inspect
         run: |
+          ./gradlew compileJava || true
           MC_JAR=$(find ~/.gradle/caches -name "*minecraft*.jar" | grep -v "sources" | head -n 1)
           echo "Found Minecraft JAR: $MC_JAR"
-          javap -cp "$MC_JAR" net.minecraft.world.entity.player.Player | grep causeFallDamage || true
-          javap -cp "$MC_JAR" net.minecraft.world.entity.LivingEntity | grep causeFallDamage || true
+          javap -cp "$MC_JAR" net.minecraft.client.gui.components.MultiLineEditBox || true
+          ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: voicemage

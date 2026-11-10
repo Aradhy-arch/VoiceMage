@@ -19,7 +19,7 @@ public abstract class PlayerMixin extends LivingEntity {
    }
 
    @Inject(method = "causeFallDamage", at = @At("HEAD"), cancellable = true)
-   private void voicemage$causeFallDamage(double fallDistance, double multiplier, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
+   private void voicemage$causeFallDamage(double fallDistance, float multiplier, DamageSource damageSource, CallbackInfoReturnable<Boolean> cir) {
       Player player = (Player)(Object)this;
       if (!player.isCreative() && !player.isSpectator() && Voicemage.SPELLS.isFlightActive(player.getUUID())) {
          if (fallDistance >= 2.0) {

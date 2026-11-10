@@ -19,11 +19,7 @@ jobs:
           distribution: temurin
           java-version: 25
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build and inspect
-        run: |
-          ./gradlew compileJava || true
-          javap -cp /home/runner/.gradle/caches/fabric-loom/26.2/minecraft-merged.jar 'net.minecraft.client.gui.components.MultiLineEditBox$Builder' || true
-          ./gradlew build
+      - run: ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: voicemage

@@ -277,20 +277,11 @@ public final class VoicemageSettingsScreen extends Screen {
 
       // Java Code Editor
       int codeY = contentY + 48;
-      this.codeBox = new MultiLineEditBox(
-         this.font,
-         leftX,
-         codeY + 10,
-         210,
-         58,
-         Component.literal("// Type Java code or click a preset..."),
-         Component.literal("Java Spell Script"),
-         0xFFE0E0E0,
-         true,
-         0xFFFFFFFF,
-         true,
-         true
-      );
+      this.codeBox = MultiLineEditBox.builder()
+         .setX(leftX)
+         .setY(codeY + 10)
+         .setPlaceholder(Component.literal("// Type Java code or click a preset..."))
+         .build(this.font, 210, 58, Component.literal("Java Spell Script"));
       this.codeBox.setCharacterLimit(8192);
       if (this.selectedCustomSpell != null) {
          this.codeBox.setValue(this.selectedCustomSpell.javaCode != null ? this.selectedCustomSpell.javaCode : "");

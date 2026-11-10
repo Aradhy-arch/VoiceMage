@@ -24,7 +24,7 @@ Speech recognition runs **100% locally on your machine** via bundled offline Vos
 
 ### 🖥️ In-Game Dark GUIs
 * **📖 Spell Grimoire Guidebook (`/voicemage` or `/voicemage spells`):** Accessible to **everyone**! An ancient dark spell tome displaying all 16 built-in spells + custom spells. Filter by category (`Offense`, `Defense`, `Utility`, `Custom`), search in real time, view exact spoken incantations, spell descriptions, and live mana costs set by server operators.
-* **⚙️ Operator Configuration Menu (`/voicemage settings`):** A dark obsidian GUI for operators inspired by *Recolourful Containers DARK*. Easily tune `voicemage.json` parameters via dedicated tabs:
+* **⚙️ Operator Configuration Menu (`/voicemage settings`):** A dark obsidian GUI for operators so they can easily tune `voicemage.json` parameters via dedicated tabs:
   * **⚡ Mana & Rules:** Pool size, regeneration rate, cast interval, explosion chant toggles, flight duration, and flight cooldown.
   * **💥 Combat & World:** Explosion power, blast radius, crater depth, fireball power, meteor stats, and lightning damage.
   * **✨ Custom Spells Editor:** Add, test, and delete custom spells with instant particle ID validation and quick presets (`Flame`, `Witch`, `Soul`, `Sonic`, `Cloud`).

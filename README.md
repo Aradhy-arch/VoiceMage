@@ -16,7 +16,7 @@ Speech recognition runs **100% locally on your machine** via bundled offline Vos
 
 ### 🎙️ Voice Casting & Speech Engine
 * **🗣️ 16 Built-in Spells:** Cast offensive blasts, defensive barriers, teleports, and creative flight with spoken incantations.
-* **✨ Dynamic Java Custom Spells:** Create your own spells in-game with literal Java code! Powered by an embedded, zero-download compiler (**Janino**), write code in ~5ms that can launch mobs, spawn multi-particle beams/bursts, trigger dance parties, summon lightning, and run server commands. Includes built-in presets (`🕺 Dance`, `✨ 3-Beam`, `🌪 Vortex`, `⚡ Zap`) and a 1-click `[📋 AI Prompt]` clipboard generator for Gemini and Claude.
+* **✨ Dynamic Java Custom Spells:** Create your own spells in-game with literal Java code! Powered by an embedded, zero-download compiler (**Janino**), write code in ~5ms that can launch mobs, spawn multi-particle beams/bursts, trigger dance parties, summon lightning, schedule timed multi-stage phases, and run server commands. Includes built-in presets (`🕺 Dance`, `✨ Beam`, `🌪 Vortex`, `⚡ Zap`, `⏳ Stages`), incantation chant requirements (`[Chant: ON/OFF]`), warmup tick delays, and a 1-click `[📋 AI Prompt]` clipboard generator for Gemini and Claude.
 * **🔄 Hot-Reload Grammar:** The voice recognizer dynamically updates its vocabulary when custom spells are created or edited without restarting your microphone.
 * **📴 Fully Offline Recognition:** Powered by [Vosk](https://github.com/alphacep/vosk-api). The speech model is packed directly into the mod JAR—no external downloads needed.
 * **🎤 Microphone Selector:** Switch input devices seamlessly in-game with `/voicemic`. Non-standard 16 kHz audio devices are converted automatically.
@@ -27,7 +27,7 @@ Speech recognition runs **100% locally on your machine** via bundled offline Vos
 * **⚙️ Operator Configuration Menu (`/voicemage settings`):** A dark obsidian GUI for operators so they can easily tune `voicemage.json` parameters via dedicated tabs:
   * **⚡ Mana & Rules:** Pool size, regeneration rate, cast interval, explosion chant toggles, flight duration, and flight cooldown.
   * **💥 Combat & World:** Explosion power, blast radius, crater depth, fireball power, meteor stats, and lightning damage.
-  * **✨ Custom Spells Editor:** Write Java code directly in-game, test compile in 1 millisecond with real-time syntax checking, load presets (Dance Party, Multi-Beam, Vortex, Zap), or click `[📋 AI]` to copy prompt instructions for Gemini/Claude.
+  * **✨ Custom Spells Editor:** Write Java code directly in-game with full multi-stage scheduling (`ctx.schedule`), toggle incantation chants (`[Chant: ON/OFF]`), configure warmup tick delays, test compile in 1 millisecond with real-time syntax checking, load 5 instant presets (Dance Party, Multi-Beam, Vortex, Zap, Celestial Stages), or click `[📋 AI]` to copy prompt instructions for Gemini/Claude.
 
 ### 🔮 Mana & Server Authority
 * **💧 Mana HUD:** On-screen mana bar with real-time regeneration and voice feedback status.
@@ -80,7 +80,7 @@ Operators can toggle whether the chant is required via `/voicemage chant false` 
 
 1. Install [Fabric Loader](https://fabricmc.net/use/) (0.19.3+) for Minecraft 26.2 and the Fabric API.
 2. Ensure you have **Java 25+** installed.
-3. Download `voicemage-26.2-<version>.jar` from the [Realeses](https://github.com/Aradhy-arch/VoiceMage/releases) Tab.
+3. Download `voicemage-26.2-<version>.jar` from the [Releases](https://github.com/Aradhy-arch/VoiceMage/releases) Tab.
 4. Place the mod into your `mods` folder (both client and server).
 5. Launch the game! On first startup, the mod extracts the built-in speech model. When the HUD shows **Voice: listening**, you are ready to cast!
 
@@ -130,10 +130,24 @@ You can edit all settings in-game via **`/voicemage settings`**, or directly in 
   "getDoomedManaCost": 50,
   "customSpells": [
     {
-      "phrase": "blaze wrath",
-      "particleName": "minecraft:flame",
+      "phrase": "dance party",
+      "particleName": "minecraft:witch",
       "manaCost": 25.0,
-      "damageOrEffect": 6.0
+      "damageOrEffect": 5.0,
+      "javaCode": "ctx.makeDance(10.0, 5);\nctx.playSound(\"block.note_block.bell\", 1.0F, 1.5F);\nctx.message(\"§d🕺 Dance party!\");",
+      "chantRequired": false,
+      "chant": "",
+      "tickDelay": 0
+    },
+    {
+      "phrase": "celestial blast",
+      "particleName": "minecraft:witch",
+      "manaCost": 45.0,
+      "damageOrEffect": 5.0,
+      "javaCode": "ctx.beam(\"portal, soul_fire_flame\");\nctx.schedule(20, () -> {\n  ctx.strikeLightning(ctx.getTargetPos());\n});",
+      "chantRequired": true,
+      "chant": "celestial skies awaken and destroy celestial blast",
+      "tickDelay": 20
     }
   ]
 }
@@ -250,13 +264,34 @@ Click the **`[📋 AI]`** button in the Custom Spells menu to instantly copy the
 ```
 You are an expert Minecraft Fabric 26.2 Java programmer. Generate Java code for a VoiceMage custom spell.
 
-RULES:
+RULES & CONSTRAINTS:
 1. Write ONLY the code inside the spell block (no class or method declaration).
 2. Use explicit types (e.g. 'LivingEntity e', 'Vec3 p') - do NOT use 'var'.
-3. You have access to 'SpellContext ctx'.
-4. Standard packages (net.minecraft.world.entity.*, server.level.*, world.phys.*, particles.*, sounds.*, world.effect.*) are pre-imported.
+3. You have access to 'SpellContext ctx' which provides:
+   - ctx.getCaster() / ctx.getPlayer() -> ServerPlayer
+   - ctx.getLevel() -> ServerLevel
+   - ctx.getTargetEntity() -> LivingEntity (or null)
+   - ctx.getTargetPos() -> Vec3
+   - ctx.getNearbyLiving(double radius) -> List<LivingEntity>
+   - ctx.getNearbyFoes(double radius) -> List<LivingEntity>
+   - ctx.beam(String particleIds) -> emits raycast beam (e.g. "flame, soul_fire_flame, sonic_boom")
+   - ctx.burst(String particleIds, Vec3 pos, int count) -> burst particles
+   - ctx.spawnParticle(String id, double x, double y, double z, int count)
+   - ctx.makeDance(double radius, int seconds) -> mobs/players jump, spin, play notes
+   - ctx.damage(LivingEntity target, float amount) -> magic damage
+   - ctx.heal(LivingEntity target, float amount) -> restores health & particles
+   - ctx.launch(LivingEntity target, double vx, double vy, double vz) -> fling entity
+   - ctx.pull(LivingEntity target, double strength) -> pull towards crosshair
+   - ctx.strikeLightning(Vec3 pos) -> summons lightning bolt
+   - ctx.applyPotion(LivingEntity target, String effect, int seconds, int amplifier)
+   - ctx.playSound(String soundId, float volume, float pitch)
+   - ctx.message(String text) -> message caster
+   - ctx.runCommand(String command) -> run server command
+   - ctx.schedule(int delayTicks, Runnable action) -> schedule multi-stage action (20 ticks = 1s)
+   - ctx.delay(int delayTicks, Runnable action) -> alias for schedule
+4. Standard Minecraft packages are pre-imported: net.minecraft.world.entity.*, net.minecraft.server.level.*, net.minecraft.world.phys.*, net.minecraft.core.particles.*, net.minecraft.sounds.*, net.minecraft.world.effect.*, java.util.*, java.lang.Math.*.
 
-Create a spell that does: [YOUR IDEA HERE]
+Create a spell that does: [DESCRIBE YOUR SPELL HERE]
 ```
 
 ---
